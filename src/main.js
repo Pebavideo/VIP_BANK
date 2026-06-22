@@ -1064,6 +1064,7 @@ const setupBtn = (id, callback, logMsg) => {
             btn.parentNode.replaceChild(newBtn, btn);
             
             newBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Impede comportamento padrão do navegador
                 console.log('👆 Botão clicado! ID:', id, 'Evento:', e);
                 console.log(logMsg);
                 
@@ -1077,7 +1078,7 @@ const setupBtn = (id, callback, logMsg) => {
                 if (typeof callback === 'function') {
                     callback();
                 } else {
-                    console.error(`❌ Função ${callback.name} não encontrada!`);
+                    console.error('❌ Função', callback.name, 'não encontrada!');
                 }
             });
             
