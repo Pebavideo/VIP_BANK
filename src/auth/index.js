@@ -431,25 +431,31 @@ async function loadUserData() {
                         }
                     });
                     
-                    // Listener para monitorar confirmações de pagamento via Pix
+                    // Listener para monitorar novas transações e confirmações
                     db.collection('transacoes')
                         .where('usuarioId', '==', user.uid)
-                        .where('status', '==', 'PENDENTE')
                         .onSnapshot(snapshot => {
                             snapshot.docChanges().forEach(change => {
-                                if (change.type === 'modified') {
-                                    const data = change.doc.data();
+                                const data = change.doc.data();
+                                
+                                if (change.type === 'added' || change.type === 'modified') {
                                     if (data.status === 'CONFIRMADO') {
                                         // Atualizar a transação na lista local
                                         const transIndex = transactions.findIndex(t => t.id === data.id);
                                         if (transIndex !== -1) {
-                                            transactions[transIndex].status = 'CONFIRMADO';
+                                            transactions[transIndex] = data;
                                         } else {
-                                            // Se a transação não estiver na lista, adiciona
                                             transactions.unshift(data);
                                         }
                                         updateUI();
-                                        toast('Depósito confirmado! Saldo atualizado.', 'sucesso');
+                                        initializeNotifications();
+                                        
+                                        // Exibir alerta específico para recebimento
+                                        if (data.tipo === 'ENTRADA') {
+                                            toast(`Novo recebimento: R$ ${parseFloat(data.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, false);
+                                        } else {
+                                            toast('Depósito confirmado! Saldo atualizado.', false);
+                                        }
                                     }
                                 }
                             });

@@ -57,7 +57,12 @@ body { background-color: var(--bg-color); color: var(--text-primary); font-famil
 }
 
 /* --- TELA DE LOGIN --- */
-#login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; padding: 20px; text-align: center; }
+#login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; text-align: center; }
+
+/* Garante que o overlay não fique na frente da tela de login inicial */
+.modal-overlay {
+  display: none !important; /* Garantido que comece fechado */
+}
 .logo-login { font-size: clamp(24px, 8vw, 40px); font-weight: 800; color: var(--text-primary); margin-bottom: 20px; }
 .logo-login span { color: var(--accent-color); }
 .welcome-text { color: #a0a0a0; font-size: 16px; margin-bottom: 40px; font-weight: 400; }
@@ -134,6 +139,17 @@ header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-b
 @media print { body * { visibility: hidden; } .modal-receipt-content, .modal-receipt-content * { visibility: visible; } .modal-receipt-content { position: absolute; left: 0; top: 0; width: 100%; } }
 
 #error-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 12px; z-index: 4000; font-weight: 600; }
+
+/* Garantia de clique nos botões de login */
+#btn-entrar-google,
+#btn-abrir-conta,
+.btn-confirm,
+.btn-outline {
+  position: relative !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
 
 /* Forçar visibilidade em dispositivos móveis */
 .btn-action { display: flex !important; }

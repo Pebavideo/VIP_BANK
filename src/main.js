@@ -1044,9 +1044,28 @@ function checkTimeAndApplyTheme() {
 
 setInterval(checkTimeAndApplyTheme, 60000);
 
-window.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('✅ Inicializando sistema de botões...');
+
+    const setupBtn = (id, callback, logMsg) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            // Remove listeners anteriores se existirem (para evitar duplicação)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', () => {
+                console.log(logMsg);
+                if (typeof callback === 'function') callback();
+                else console.error(`Função ${callback.name} não encontrada!`);
+            });
+        }
+    };
+
+    setupBtn('btn-entrar-google', signInWithGoogle, "Tentando logar via Google...");
+    setupBtn('btn-abrir-conta', verificarAntesDeCriar, "Abrindo formulário de cadastro...");
+
     loadUserData();
-    
     checkTimeAndApplyTheme();
     updateUI();
     updateProfitDisplay();
