@@ -464,10 +464,14 @@ async function loadUserData() {
                     const btnEntrar = document.createElement('button');
                     btnEntrar.innerHTML = 'ACESSAR MEU BANCO VIP';
                     btnEntrar.className = 'btn-confirm';
-                    btnEntrar.style.cssText = 'background:#00c851 !important; color:white; width:100%; max-width:350px; height:56px; border-radius:16px; font-weight:bold; cursor:pointer; margin: 15px auto !important; display:block; border:none;';
+                    btnEntrar.style.cssText = 'background:#00c851 !important; color:white; width:100%; max-width:350px; height:56px; border-radius:16px; font-weight:bold; cursor:pointer; margin: 15px auto !important; display:block; border:none; z-index:9999; position:relative;';
                     
                     // Como o ID já foi validado, entra direto
-                    btnEntrar.onclick = () => { entrar(); updateUI(); };
+                    btnEntrar.onclick = () => { 
+                        console.log('Botão ACESSAR MEU BANCO VIP clicado com sucesso!');
+                        entrar(); 
+                        updateUI(); 
+                    };
                     container.appendChild(btnEntrar);
                     
                     document.getElementById('create-account-form').style.display = 'none';
@@ -501,6 +505,7 @@ async function saveUserData() {
 
 // Função de login com Google
 async function signInWithGoogle() {
+    console.log('Botão clicado com sucesso!');
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
@@ -781,8 +786,8 @@ async function finalizeAccount(uid) {
         // Usuário autenticado só tem permissão para escrever no seu PRÓPRIO ID (UID)
         const cleanCpf = cpf.replace(/\D/g, '');
 
-        // GRAVAÇÃO COMPLETA - Identidade Híbrida
-        await db.collection('usuarios').doc(uid).set({
+        // Objeto completo para Firestore
+        const dadosUsuario = {
             nome: nome,
             cpf: cleanCpf,
             tipo_conta: tipoConta,
@@ -800,7 +805,12 @@ async function finalizeAccount(uid) {
             chave_ativa: pixFormatado,
             chave_tipo: pixType,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        };
+        
+        console.log('📤 Enviando dados para Firestore:', dadosUsuario);
+        
+        // GRAVAÇÃO COMPLETA - Identidade Híbrida
+        await db.collection('usuarios').doc(uid).set(dadosUsuario, { merge: true });
         
         // DELAY DE GRAVAÇÃO: Aguarda Firestore estabilizar
         await new Promise(resolve => setTimeout(resolve, 2000));
