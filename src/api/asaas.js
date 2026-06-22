@@ -1,5 +1,7 @@
 let qrCodeInstance = null;
 let pixCopiaCola = '';
+const db = firebase.firestore();
+const functions = firebase.functions();
 
 async function gerarCobrancaPix() {
     const valueInput = document.getElementById('deposit-value');
@@ -108,8 +110,9 @@ async function gerarCobrancaPix() {
 
         transactions.unshift(newTransaction);
 
-        // Salvar transação em uma coleção separada para webhook
-        await db.collection('transacoes').doc(transactionId.toString()).set(newTransaction);
+        // Salvar transação via Cloud Function
+        const criarTransacao = functions.httpsCallable('criarTransacao');
+        await criarTransacao({ transacao: newTransaction });
 
         await saveUserData();
 

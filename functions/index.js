@@ -4,6 +4,169 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 
+// ==========================================
+// CALLABLE CLOUD FUNCTIONS (para front-end)
+// ==========================================
+
+// 1. Criar conta de usuário
+exports.criarContaUsuario = functions.https.onCall(async (data, context) => {
+    // Verificar autenticação
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+    }
+
+    const uid = context.auth.uid;
+    const dadosUsuario = data.dadosUsuario;
+
+    try {
+        // Salvar dados do usuário no Firestore
+        await db.collection('usuarios').doc(uid).set(dadosUsuario, { merge: true });
+        console.log(`✅ Conta criada para usuário: ${uid}`);
+        return { sucesso: true, mensagem: 'Conta criada com sucesso' };
+    } catch (error) {
+        console.error('❌ Erro ao criar conta:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao criar conta', error);
+    }
+});
+
+// 2. Atualizar dados do usuário
+exports.atualizarUsuario = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+    }
+
+    const uid = context.auth.uid;
+    const dadosAtualizados = data.dados;
+
+    try {
+        await db.collection('usuarios').doc(uid).update(dadosAtualizados);
+        console.log(`✅ Dados atualizados para usuário: ${uid}`);
+        return { sucesso: true };
+    } catch (error) {
+        console.error('❌ Erro ao atualizar usuário:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao atualizar dados', error);
+    }
+});
+
+// 3. Criar transação
+exports.criarTransacao = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+    }
+
+    const transacao = data.transacao;
+    transacao.usuarioId = context.auth.uid;
+
+    try {
+        // Salvar transação no Firestore
+        await db.collection('transacoes').doc(transacao.id.toString()).set(transacao);
+        console.log(`✅ Transação criada: ${transacao.id}`);
+        return { sucesso: true, transacao };
+    } catch (error) {
+        console.error('❌ Erro ao criar transação:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao criar transação', error);
+    }
+});
+
+// 4. Atualizar configurações admin (apenas para dono)
+exports.atualizarConfiguracoesAdmin = functions.https.onCall(async (data, context) => {
+    const ADMIN_EMAIL = 'jjoserobertorocharocha@gmail.com';
+    
+    if (!context.auth || context.auth.token.email !== ADMIN_EMAIL) {
+        throw new functions.https.HttpsError('permission-denied', 'Acesso negado');
+    }
+
+    const novasConfigs = data.configs;
+
+    try {
+        await db.collection('admin').doc('configuracoes').set(novasConfigs, { merge: true });
+        console.log('✅ Configurações admin atualizadas');
+        return { sucesso: true };
+    } catch (error) {
+        console.error('❌ Erro ao atualizar configs:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao atualizar configurações', error);
+    }
+});
+
+// 5. Deletar conta de usuário
+exports.deletarContaUsuario = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+    }
+
+    const uid = context.auth.uid;
+
+    try {
+        // Deletar dados do Firestore
+        await db.collection('usuarios').doc(uid).delete();
+        // Deletar usuário do Auth (opcional, se quiser manter a conta auth pode remover)
+        await admin.auth().deleteUser(uid);
+        console.log(`✅ Conta deletada: ${uid}`);
+        return { sucesso: true };
+    } catch (error) {
+        console.error('❌ Erro ao deletar conta:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao deletar conta', error);
+    }
+});
+
+// 6. Registrar log de erro
+exports.registrarLogErro = functions.https.onCall(async (data, context) => {
+    const logErro = data.log;
+
+    try {
+        await db.collection('logs_erro').add({
+            ...logErro,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            usuarioId: context.auth?.uid || null
+        });
+        console.log('✅ Log de erro registrado');
+        return { sucesso: true };
+    } catch (error) {
+        console.error('❌ Erro ao registrar log:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao registrar log', error);
+    }
+});
+
+// 7. Resgatar lucro admin
+exports.resgatarLucroAdmin = functions.https.onCall(async (data, context) => {
+    const ADMIN_EMAIL = 'jjoserobertorocharocha@gmail.com';
+    
+    if (!context.auth || context.auth.token.email !== ADMIN_EMAIL) {
+        throw new functions.https.HttpsError('permission-denied', 'Acesso negado');
+    }
+
+    try {
+        // Busca lucro atual do cofre central
+        const adminDoc = await db.collection('admin').doc('configuracoes').get();
+        const lucroTotal = adminDoc.exists ? adminDoc.data().lucro_total || 0 : 0;
+        
+        if (lucroTotal <= 0) {
+            return { sucesso: false, mensagem: 'Não há lucro disponível para resgate' };
+        }
+        
+        // Transfere para saldo pessoal do admin
+        const adminUserDoc = await db.collection('usuarios').where('email', '==', ADMIN_EMAIL).get();
+        if (!adminUserDoc.empty) {
+            const adminUid = adminUserDoc.docs[0].id;
+            const adminData = adminUserDoc.docs[0].data();
+            const newBalance = (adminData.balance || 0) + lucroTotal;
+            
+            // Atualiza saldo do admin
+            await db.collection('usuarios').doc(adminUid).update({ balance: newBalance });
+            
+            // Zera cofre central
+            await db.collection('admin').doc('configuracoes').update({ lucro_total: 0 });
+            
+            return { sucesso: true, lucroTotal: lucroTotal, newBalance: newBalance };
+        } else {
+            return { sucesso: false, mensagem: 'Conta administrativa não encontrada' };
+        }
+    } catch (error) {
+        console.error('❌ Erro ao resgatar lucro:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao resgatar lucro', error);
+    }
+});
+
 // Função para validar a assinatura do webhook do Asaas
 function validarAssinaturaAsaas(assinatura, body, webhookSecret) {
     try {

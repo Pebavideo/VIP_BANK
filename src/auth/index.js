@@ -17,11 +17,7 @@ async function loadPixFee() {
         if (adminDoc.exists && adminDoc.data().valor_taxa_pix) {
             ASAAS_PIX_FEE = adminDoc.data().valor_taxa_pix;
         } else {
-            // Se não existir, cria com valor padrão
-            await db.collection('admin').doc('configuracoes').set({
-                valor_taxa_pix: 3.99,
-                lucro_total: 0
-            }, { merge: true });
+            // Se não existir, usa valor padrão (não tenta escrever no Firestore)
             ASAAS_PIX_FEE = 3.99;
         }
     } catch (error) {
@@ -34,6 +30,7 @@ async function loadPixFee() {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const functions = firebase.functions();
 
 // Configura persistência local para manter sessão ativa
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
@@ -161,17 +158,15 @@ async function encerrarContaVIP() {
             return;
         }
 
-        // Step 2: Delete user document from Firestore
-        await db.collection('usuarios').doc(user.uid).delete();
+        // Step 2: Delete via Cloud Function
+        const deletarConta = functions.httpsCallable('deletarContaUsuario');
+        await deletarConta();
 
-        // Step 3: Delete user from Firebase Auth
-        await user.delete();
-
-        // Step 4: Clear local storage
+        // Step 3: Clear local storage
         localStorage.clear();
         sessionStorage.clear();
 
-        // Step 5: Show success and refresh to login screen
+        // Step 4: Show success and refresh to login screen
         toast('Conta encerrada com sucesso. Até logo!', 'sucesso');
         setTimeout(() => {
             location.reload();
@@ -283,14 +278,15 @@ async function auditarPrecisaoSaldo() {
             console.error('ERRO DE PRECISÃO SALDO!');
             console.error(`Saldo Calculado: R$ ${saldoCalculado.toFixed(2)}, Saldo Salvo: R$ ${saldoSalvo.toFixed(2)}`);
             
-            // Registrar erro na coleção logs_erro
-            await db.collection('logs_erro').add({
-                tipo: 'precisao_saldo',
-                usuarioId: currentUser.uid,
-                saldoCalculado: saldoCalculado,
-                saldoSalvo: saldoSalvo,
-                dataHora: firebase.firestore.FieldValue.serverTimestamp(),
-                mensagem: `Divergência de saldo: Calculado R$ ${saldoCalculado.toFixed(2)} vs Salvo R$ ${saldoSalvo.toFixed(2)}`
+            // Registrar erro na coleção logs_erro via Cloud Function
+            const registrarLog = functions.httpsCallable('registrarLogErro');
+            await registrarLog({
+                log: {
+                    tipo: 'precisao_saldo',
+                    saldoCalculado: saldoCalculado,
+                    saldoSalvo: saldoSalvo,
+                    mensagem: `Divergência de saldo: Calculado R$ ${saldoCalculado.toFixed(2)} vs Salvo R$ ${saldoSalvo.toFixed(2)}`
+                }
             });
             
             toast('Aviso: Verificação de saldo detectou inconsistência.', 'erro');
@@ -516,55 +512,88 @@ async function loadUserData() {
     });
 }
 
-// Salva dados do usuário no Firestore (não salva balance, pois é calculado)
+// Salva dados do usuário no Firestore via Cloud Function
 async function saveUserData() {
     if (!currentUser) return;
     
     try {
-        await db.collection('usuarios').doc(currentUser.uid).set({
-            apiKey: apiKey,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        const atualizarUsuario = functions.httpsCallable('atualizarUsuario');
+        await atualizarUsuario({
+            dados: {
+                apiKey: apiKey,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }
+        });
     } catch (error) {
         console.error('Erro ao salvar dados:', error);
         toast('Erro ao salvar dados no servidor', 'erro');
     }
 }
 
-// Função de login com Google
-async function signInWithGoogle() {
-    console.log('Botão clicado com sucesso!');
+// Função principal de verificação de login
+async function verificarLogin() {
+    console.log('🔐 Iniciando verificação de login...');
+    const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
+    
     try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
+        // 1. Verifica se já tem usuário logado no Firebase Auth
+        let user = firebase.auth().currentUser;
         
-        toast(`Identidade confirmada: ${user.displayName || 'usuário'}`, false);
+        if (!user) {
+            // 2. Se não tem usuário logado, abre o popup do Google
+            console.log('⚠️ Nenhum usuário logado. Abrindo popup do Google...');
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            const result = await auth.signInWithPopup(provider);
+            user = result.user;
+        }
         
-        // Timer de estabilização de 5 segundos
-        setTimeout(async () => {
-            try {
-                const userDoc = await db.collection('usuarios').doc(user.uid).get();
-                if (!userDoc.exists) {
-                    // Se não existe documento, joga para criação de conta
-                    toast('Nenhuma conta VIP encontrada. Cadastre-se primeiro.', 'erro');
-                    closeModal('modal-login-manual');
-                    showCreateAccountForm();
-                } else {
-                    // Se existe, continua com login manual normal
-                    showModal('modal-login-manual');
-                }
-            } catch (error) {
-                console.error('Erro ao verificar documento:', error);
-                toast('Erro ao verificar conta. Tente novamente.', 'erro');
+        console.log('✅ Usuário autenticado:', user.uid);
+        
+        // 3. Verifica se é o dono do sistema
+        if (user.uid === OWNER_UID) {
+            console.log('👑 Dono detectado! Logando direto...');
+            const userDoc = await db.collection('usuarios').doc(OWNER_UID).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                globalUserData = userData;
+                currentUser = user;
+                balance = userData.balance || 0;
+                transactions = userData.transactions || [];
+                entrar();
+                updateUI();
+                updateProfitDisplay();
+                initializeNotifications();
+                console.log('✅ Dono logado com sucesso!');
+                return;
             }
-        }, 5000);
+        }
+        
+        // 4. Se não é o dono, continua com o fluxo normal
+        console.log('📝 Verificando conta no Firestore...');
+        const userDoc = await db.collection('usuarios').doc(user.uid).get();
+        if (userDoc.exists) {
+            toast('Identidade VIP detectada! Por favor, confirme sua senha para entrar.', false);
+            document.getElementById('manual-login-id').value = user.email;
+            showModal('modal-login-manual');
+        } else {
+            toast('Nenhuma conta VIP encontrada. Cadastre-se primeiro.', 'erro');
+            showCreateAccountForm();
+        }
         
     } catch (error) {
-        console.error('Erro no login Google:', error);
-        toast('Erro ao fazer login com Google', 'erro');
+        console.error('❌ Erro na verificação de login:', error);
+        toast('Erro ao acessar conta. Tente novamente.', 'erro');
     }
+}
+
+// Vincula a função ao window para acesso global
+window.verificarLogin = verificarLogin;
+
+// Função de login com Google (mantida para compatibilidade)
+async function signInWithGoogle() {
+    console.log('Botão clicado com sucesso!');
+    await verificarLogin();
 }
 
 async function resetPasswordManual() {
@@ -836,10 +865,11 @@ async function finalizeAccount(uid) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        console.log('📤 Enviando dados para Firestore:', dadosUsuario);
+        console.log('📤 Enviando dados para Cloud Function:', dadosUsuario);
         
-        // GRAVAÇÃO COMPLETA - Identidade Híbrida
-        await db.collection('usuarios').doc(uid).set(dadosUsuario, { merge: true });
+        // GRAVAÇÃO VIA CLOUD FUNCTION
+        const criarConta = functions.httpsCallable('criarContaUsuario');
+        await criarConta({ dadosUsuario });
         
         // DELAY DE GRAVAÇÃO: Aguarda Firestore estabilizar
         await new Promise(resolve => setTimeout(resolve, 2000));

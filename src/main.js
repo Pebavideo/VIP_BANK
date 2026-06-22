@@ -1,16 +1,3 @@
-// Debug: Listener de clique global para detectar onde o usuário está clicando
-document.addEventListener('click', (e) => {
-    console.log('👆 Clique detectado em:', e.target);
-    console.log('  - ID do elemento:', e.target.id);
-    console.log('  - Classes do elemento:', e.target.className);
-    console.log('  - Z-index do elemento:', window.getComputedStyle(e.target).zIndex);
-});
-
-// Verificação de funções globais
-console.log('🔍 Verificando funções globais:');
-console.log('  - signInWithGoogle:', typeof signInWithGoogle);
-console.log('  - verificarAntesDeCriar:', typeof verificarAntesDeCriar);
-
 function toggleBalanceVisibility() {
     balanceHidden = !balanceHidden;
     const eyeIcon = document.getElementById('balance-eye');
@@ -89,6 +76,10 @@ function maskDocumento(input) {
 function maskCPF(input) {
     maskDocumento(input);
 }
+
+// Inicializa Firebase Functions (Firebase já inicializado em auth/index.js)
+const db = firebase.firestore();
+const functions = firebase.functions();
 
 // Validação de formatos de chave PIX
 const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
@@ -351,10 +342,13 @@ async function registerPixKey() {
     try {
         // Formata a chave antes de salvar
         const chaveFormatada = formatPixKey(novaChave, novoTipo);
-        // Comando Pro: sobrescreve a chave antiga no documento do lojista
-        await db.collection('usuarios').doc(currentUser.uid).update({
-            chave_ativa: chaveFormatada,
-            chave_tipo: novoTipo
+        // Atualiza via Cloud Function
+        const atualizarUsuario = functions.httpsCallable('atualizarUsuario');
+        await atualizarUsuario({
+            dados: {
+                chave_ativa: chaveFormatada,
+                chave_tipo: novoTipo
+            }
         });
         
         userPixKey = chaveFormatada; // Atualiza na memória com a chave formatada
@@ -494,18 +488,22 @@ async function finalizePayment() {
             throw new Error('Validação de transação falhou');
         }
         
-        // Salva a transação na coleção separada transacoes
-        await db.collection('transacoes').doc(newTransaction.id.toString()).set(newTransaction);
+        // Salva a transação via Cloud Function
+        const criarTransacao = functions.httpsCallable('criarTransacao');
+        await criarTransacao({ transacao: newTransaction });
         
         // Adiciona a transação à lista local
         transactions.unshift(newTransaction);
         
         if (pendingTransfer.fee && pendingTransfer.fee > 0) {
-            // Grava taxa no cofre central admin/configuracoes
+            // Grava taxa no cofre central via Cloud Function (apenas admin)
             try {
-                await db.collection('admin').doc('configuracoes').set({
-                    lucro_total: firebase.firestore.FieldValue.increment(pendingTransfer.fee)
-                }, { merge: true });
+                const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+                await atualizarConfig({
+                    configs: {
+                        lucro_total: firebase.firestore.FieldValue.increment(pendingTransfer.fee)
+                    }
+                });
                 await updateProfitDisplay();
             } catch (error) {
                 console.error('Erro ao salvar taxa no cofre:', error);
@@ -880,10 +878,13 @@ async function saveKey() {
     const newApiKey = document.getElementById('asaas-key').value; 
     
     try {
-        // Salvar na coleção admin/configuracoes para acesso global
-        await db.collection('admin').doc('configuracoes').set({
-            asaas_api_key: newApiKey
-        }, { merge: true });
+        // Salvar via Cloud Function
+        const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+        await atualizarConfig({
+            configs: {
+                asaas_api_key: newApiKey
+            }
+        });
         
         apiKey = newApiKey;
         toast('Configuração salva com sucesso!', 'sucesso'); 
@@ -933,27 +934,12 @@ async function redeemProfit() {
     }
     
     try {
-        // Busca lucro atual do cofre central
-        const adminDoc = await db.collection('admin').doc('configuracoes').get();
-        const lucroTotal = adminDoc.exists ? adminDoc.data().lucro_total || 0 : 0;
+        const resgatarLucro = functions.httpsCallable('resgatarLucroAdmin');
+        const result = await resgatarLucro();
         
-        if (lucroTotal <= 0) {
-            toast('Não há lucro disponível para resgate!', 'erro');
-            return;
-        }
-        
-        // Transfere para saldo pessoal do admin
-        const adminUserDoc = await db.collection('usuarios').where('email', '==', ADMIN_EMAIL).get();
-        if (!adminUserDoc.empty) {
-            const adminUid = adminUserDoc.docs[0].id;
-            const adminData = adminUserDoc.docs[0].data;
-            const newBalance = (adminData.balance || 0) + lucroTotal;
-            
-            // Atualiza saldo do admin
-            await db.collection('usuarios').doc(adminUid).update({ balance: newBalance });
-            
-            // Zera cofre central
-            await db.collection('admin').doc('configuracoes').update({ lucro_total: 0 });
+        if (result.data.sucesso) {
+            const lucroTotal = result.data.lucroTotal;
+            const newBalance = result.data.newBalance;
             
             toast(`Lucro de ${lucroTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} resgatado com sucesso!`, 'sucesso');
             
@@ -964,7 +950,7 @@ async function redeemProfit() {
                 updateUI();
             }
         } else {
-            toast('Erro: Conta administrativa não encontrada!', 'erro');
+            toast(result.data.mensagem || 'Erro ao resgatar lucro', 'erro');
         }
     } catch (error) {
         console.error('Erro ao resgatar lucro:', error);
@@ -1060,93 +1046,41 @@ function checkTimeAndApplyTheme() {
 
 setInterval(checkTimeAndApplyTheme, 60000);
 
-// Função para configurar um botão (definida fora para ser reutilizada)
-const setupBtn = (id, callback, logMsg) => {
-    try {
-        const btn = document.getElementById(id);
-        console.log(`🔍 Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
-        if (btn) {
-            // Verifica se já tem o listener (para evitar duplicação)
-            if (btn.hasAttribute('data-listener-set')) {
-                console.log(`ℹ️ Botão ${id} já tem listener configurado`);
-                return true;
-            }
-            
-            // Remove listeners anteriores se existirem (para evitar duplicação)
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // Impede comportamento padrão do navegador
-                console.log('👆 Botão clicado! ID:', id, 'Evento:', e);
-                console.log(logMsg);
-                
-                // Verifica o estado de autenticação
-                if (auth && auth.currentUser) {
-                    console.log('✅ Usuário já autenticado, redirecionando para dashboard');
-                    entrar(); // Chama a função para ir direto para o dashboard
-                    return;
-                }
-                
-                if (typeof callback === 'function') {
-                    callback();
-                } else {
-                    console.error('❌ Função', callback.name, 'não encontrada!');
-                }
-            });
-            
-            // Marca o botão como já configurado
-            newBtn.setAttribute('data-listener-set', 'true');
-            console.log(`✅ Listener adicionado ao botão ${id}`);
-            return true;
-        } else {
-            console.error(`❌ Botão com ID ${id} não encontrado!`);
-            return false;
-        }
-    } catch (error) {
-        console.error(`❌ Erro ao configurar botão ${id}:`, error);
-        return false;
-    }
-};
-
-// Vinculação inicial no DOMContentLoaded
+// Listener direto e simples para os botões
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        console.log('✅ Inicializando sistema de botões...');
+    console.log('✅ Inicializando sistema de botões...');
 
-        // Tentativa inicial
-        const btnEntrarConfigurado = setupBtn('btn-entrar-google', signInWithGoogle, 'Tentando logar via Google...');
-        const btnAbrirConfigurado = setupBtn('btn-abrir-conta', verificarAntesDeCriar, 'Abrindo formulário de cadastro...');
-
-        // Vinculação forçada: verifica a cada 500ms se os botões estão presentes
-        if (!btnEntrarConfigurado || !btnAbrirConfigurado) {
-            const intervalId = setInterval(() => {
-                console.log('⏱️ Tentando vincular botões novamente...');
-                const btnEntrarOk = setupBtn('btn-entrar-google', signInWithGoogle, 'Tentando logar via Google...');
-                const btnAbrirOk = setupBtn('btn-abrir-conta', verificarAntesDeCriar, 'Abrindo formulário de cadastro...');
-                
-                // Quando ambos estiverem configurados, para o intervalo
-                if (btnEntrarOk && btnAbrirOk) {
-                    clearInterval(intervalId);
-                    console.log('✅ Todos os botões vinculados com sucesso!');
-                }
-            }, 500);
-            
-            // Para o intervalo após 10 segundos para não ficar rodando forever
-            setTimeout(() => {
-                clearInterval(intervalId);
-                console.log('⏹️ Parando tentativas de vinculação');
-            }, 10000);
-        }
-
-        loadUserData();
-        checkTimeAndApplyTheme();
-        updateUI();
-        updateProfitDisplay();
-        console.log('✅ Sistema de botões inicializado com sucesso!');
-    } catch (error) {
-        console.error('❌ Erro crítico ao inicializar sistema:', error);
+    // Botão Entrar
+    const btnEntrar = document.getElementById('btn-entrar-google');
+    if (btnEntrar) {
+        btnEntrar.onclick = async (e) => {
+            e.preventDefault();
+            console.log('👆 Botão Entrar clicado. Iniciando verificação...');
+            await window.verificarLogin();
+        };
+        console.log('✅ Listener do botão Entrar configurado');
+    } else {
+        console.error('❌ Botão Entrar não encontrado!');
     }
+
+    // Botão Abrir Conta
+    const btnAbrirConta = document.getElementById('btn-abrir-conta');
+    if (btnAbrirConta) {
+        btnAbrirConta.onclick = async (e) => {
+            e.preventDefault();
+            console.log('👆 Botão Abrir Conta clicado...');
+            await verificarAntesDeCriar();
+        };
+        console.log('✅ Listener do botão Abrir Conta configurado');
+    } else {
+        console.error('❌ Botão Abrir Conta não encontrado!');
+    }
+
+    loadUserData();
+    checkTimeAndApplyTheme();
+    updateUI();
+    updateProfitDisplay();
+    console.log('✅ Sistema inicializado com sucesso!');
 });
 
 // Segurança: Encerra sessão ao fechar ou ocultar a aba
@@ -1237,8 +1171,11 @@ async function savePixFee() {
     }
     
     try {
-        await db.collection('admin').doc('configuracoes').update({
-            valor_taxa_pix: newFee
+        const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+        await atualizarConfig({
+            configs: {
+                valor_taxa_pix: newFee
+            }
         });
         
         ASAAS_PIX_FEE = newFee;
@@ -1261,11 +1198,8 @@ async function deletarMinhaConta() {
     }
 
     try {
-        const user = firebase.auth().currentUser;
-        // 1. Apaga os dados no Firestore
-        await db.collection('usuarios').doc(user.uid).delete();
-        // 2. Apaga o usuário no Auth
-        await user.delete();
+        const deletarConta = functions.httpsCallable('deletarContaUsuario');
+        await deletarConta();
         
         alert("Conta VIP encerrada com sucesso. Seus dados foram removidos.");
         location.reload(); // Volta para a tela de login inicial
