@@ -483,36 +483,24 @@ async function loadUserData() {
                     // Inicializa sistema de notificações
                     initializeNotifications();
                     
+                    // DEIXAR OS BOTÕES ORIGINAIS INTACTOS! Não limpar o container!
                     const container = document.getElementById('login-buttons');
-                    container.innerHTML = ''; // Limpa tudo
                     
-                    const btnEntrar = document.createElement('button');
-                    btnEntrar.innerHTML = 'ACESSAR MEU BANCO VIP';
-                    btnEntrar.className = 'btn-confirm';
-                    btnEntrar.style.cssText = 'background:#00c851 !important; color:white; width:100%; max-width:350px; height:56px; border-radius:16px; font-weight:bold; cursor:pointer; margin: 15px auto !important; display:block; border:none; z-index:9999; position:relative;';
+                    // Apenas adicionar o botão de acesso sem remover os outros
+                    const btnAcessar = document.createElement('button');
+                    btnAcessar.innerHTML = 'ACESSAR MEU BANCO VIP';
+                    btnAcessar.className = 'btn-confirm';
+                    btnAcessar.style.cssText = 'background:#00c851 !important; color:white; width:100%; max-width:350px; height:56px; border-radius:16px; font-weight:bold; cursor:pointer; margin: 15px auto !important; display:block; border:none; z-index:9999; position:relative;';
                     
                     // Como o ID já foi validado, entra direto
-                    btnEntrar.onclick = () => { 
+                    btnAcessar.onclick = () => { 
                         console.log('Botão ACESSAR MEU BANCO VIP clicado com sucesso!');
                         entrar(); 
                         updateUI(); 
                     };
-                    container.appendChild(btnEntrar);
                     
-                    // RECRIAR o botão de cadastro (pois limpamos o container)
-                    const btnAbrirConta = document.createElement('button');
-                    btnAbrirConta.id = 'btn-abrir-conta';
-                    btnAbrirConta.className = 'btn-outline';
-                    btnAbrirConta.innerHTML = 'ABRIR CONTA VIP';
-                    btnAbrirConta.onclick = () => {
-                        console.log('Botão ABRIR CONTA VIP clicado!');
-                        if (typeof verificarAntesDeCriar === 'function') {
-                            verificarAntesDeCriar();
-                        } else {
-                            console.error('Função verificarAntesDeCriar não encontrada!');
-                        }
-                    };
-                    container.appendChild(btnAbrirConta);
+                    // Adicionar o botão no início do container (sem remover os originais)
+                    container.insertBefore(btnAcessar, container.firstChild);
                     
                     document.getElementById('create-account-form').style.display = 'none';
                 } else {
