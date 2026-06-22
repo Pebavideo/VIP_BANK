@@ -1047,36 +1047,83 @@ function checkTimeAndApplyTheme() {
 
 setInterval(checkTimeAndApplyTheme, 60000);
 
+// Função para configurar um botão (definida fora para ser reutilizada)
+const setupBtn = (id, callback, logMsg) => {
+    try {
+        const btn = document.getElementById(id);
+        console.log(`🔍 Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
+        if (btn) {
+            // Verifica se já tem o listener (para evitar duplicação)
+            if (btn.hasAttribute('data-listener-set')) {
+                console.log(`ℹ️ Botão ${id} já tem listener configurado`);
+                return true;
+            }
+            
+            // Remove listeners anteriores se existirem (para evitar duplicação)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                console.log('👆 Botão clicado! ID:', id, 'Evento:', e);
+                console.log(logMsg);
+                
+                // Verifica o estado de autenticação
+                if (auth && auth.currentUser) {
+                    console.log('✅ Usuário já autenticado, redirecionando para dashboard');
+                    entrar(); // Chama a função para ir direto para o dashboard
+                    return;
+                }
+                
+                if (typeof callback === 'function') {
+                    callback();
+                } else {
+                    console.error(`❌ Função ${callback.name} não encontrada!`);
+                }
+            });
+            
+            // Marca o botão como já configurado
+            newBtn.setAttribute('data-listener-set', 'true');
+            console.log(`✅ Listener adicionado ao botão ${id}`);
+            return true;
+        } else {
+            console.error(`❌ Botão com ID ${id} não encontrado!`);
+            return false;
+        }
+    } catch (error) {
+        console.error(`❌ Erro ao configurar botão ${id}:`, error);
+        return false;
+    }
+};
+
+// Vinculação inicial no DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     try {
         console.log('✅ Inicializando sistema de botões...');
 
-        const setupBtn = (id, callback, logMsg) => {
-            try {
-                const btn = document.getElementById(id);
-                console.log(`Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
-                if (btn) {
-                    // Remove listeners anteriores se existirem (para evitar duplicação)
-                    const newBtn = btn.cloneNode(true);
-                    btn.parentNode.replaceChild(newBtn, btn);
-                    
-                    newBtn.addEventListener('click', (e) => {
-                        console.log('Botão clicado! ID:', id, 'Evento:', e);
-                        console.log(logMsg);
-                        if (typeof callback === 'function') callback();
-                        else console.error(`Função ${callback.name} não encontrada!`);
-                    });
-                    console.log(`✅ Listener adicionado ao botão ${id}`);
-                } else {
-                    console.error(`❌ Botão com ID ${id} não encontrado!`);
-                }
-            } catch (error) {
-                console.error(`❌ Erro ao configurar botão ${id}:`, error);
-            }
-        };
+        // Tentativa inicial
+        const btnEntrarConfigurado = setupBtn('btn-entrar-google', signInWithGoogle, 'Tentando logar via Google...');
+        const btnAbrirConfigurado = setupBtn('btn-abrir-conta', verificarAntesDeCriar, 'Abrindo formulário de cadastro...');
 
-        setupBtn('btn-entrar-google', signInWithGoogle, "Tentando logar via Google...");
-        setupBtn('btn-abrir-conta', verificarAntesDeCriar, "Abrindo formulário de cadastro...");
+        // Vinculação forçada: verifica a cada 500ms se os botões estão presentes
+        if (!btnEntrarConfigurado || !btnAbrirConfigurado) {
+            const intervalId = setInterval(() => {
+                console.log('⏱️ Tentando vincular botões novamente...');
+                const btnEntrarOk = setupBtn('btn-entrar-google', signInWithGoogle, 'Tentando logar via Google...');
+                const btnAbrirOk = setupBtn('btn-abrir-conta', verificarAntesDeCriar, 'Abrindo formulário de cadastro...');
+                
+                // Quando ambos estiverem configurados, para o intervalo
+                if (btnEntrarOk && btnAbrirOk) {
+                    clearInterval(intervalId);
+                    console.log('✅ Todos os botões vinculados com sucesso!');
+                }
+            }, 500);
+            
+            // Para o intervalo após 10 segundos para não ficar rodando forever
+            setTimeout(() => {
+                clearInterval(intervalId);
+                console.log('⏹️ Parando tentativas de vinculação');
+            }, 10000);
+        }
 
         loadUserData();
         checkTimeAndApplyTheme();
