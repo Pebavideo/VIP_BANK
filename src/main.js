@@ -1,3 +1,16 @@
+// Debug: Listener de clique global para detectar onde o usuário está clicando
+document.addEventListener('click', (e) => {
+    console.log('👆 Clique detectado em:', e.target);
+    console.log('  - ID do elemento:', e.target.id);
+    console.log('  - Classes do elemento:', e.target.className);
+    console.log('  - Z-index do elemento:', window.getComputedStyle(e.target).zIndex);
+});
+
+// Verificação de funções globais
+console.log('🔍 Verificando funções globais:');
+console.log('  - signInWithGoogle:', typeof signInWithGoogle);
+console.log('  - verificarAntesDeCriar:', typeof verificarAntesDeCriar);
+
 function toggleBalanceVisibility() {
     balanceHidden = !balanceHidden;
     const eyeIcon = document.getElementById('balance-eye');
