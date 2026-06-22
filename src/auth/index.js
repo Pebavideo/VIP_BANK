@@ -1,67 +1,36 @@
-// Configuração do Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyDcAHKYygweCnoXdZr1JRebLwKTSryK1BU",
-    authDomain: "vip-bank-f183b.firebaseapp.com",
-    projectId: "vip-bank-f183b"
-};
+// Arquivo migrado para usar VIPBANK namespace central!
+console.log('✅ src/auth/index.js carregado');
 
-// Definição do Dono
-const ADMIN_EMAIL = 'jjoserobertorocharocha@gmail.com';
+// Aliases para o namespace VIPBANK (para não mudar todo o código de uma vez)
+const { db, auth, functions, ADMIN_EMAIL, regex } = VIPBANK;
+let { ASAAS_PIX_FEE, currentUser, balance, apiKey, transactions, userPassword, userTransPassword, userCPF, userPixKey, pendingTransfer, balanceHidden, globalUserData, qrScanner, qrPaymentData, adminClickCount, isAdmin, unreadTransactions } = VIPBANK;
 
-// Variável global para taxa Pix dinâmica
-let ASAAS_PIX_FEE = 3.99;
+// Regex com alias (usando o namespace)
+const AUTH_CPF_REGEX = regex.CPF;
+const AUTH_CNPJ_REGEX = regex.CNPJ;
+const AUTH_EMAIL_REGEX = regex.EMAIL;
+const AUTH_CELULAR_REGEX = regex.CELULAR;
+const AUTH_UUID_REGEX = regex.UUID;
+const AUTH_CPF_RAW_REGEX = regex.CPF_RAW;
+const AUTH_CNPJ_RAW_REGEX = regex.CNPJ_RAW;
+const AUTH_CELULAR_RAW_REGEX = regex.CELULAR_RAW;
 
 async function loadPixFee() {
     try {
         const adminDoc = await db.collection('admin').doc('configuracoes').get();
         if (adminDoc.exists && adminDoc.data().valor_taxa_pix) {
             ASAAS_PIX_FEE = adminDoc.data().valor_taxa_pix;
+            VIPBANK.ASAAS_PIX_FEE = ASAAS_PIX_FEE; // Atualiza namespace
         } else {
-            // Se não existir, usa valor padrão (não tenta escrever no Firestore)
             ASAAS_PIX_FEE = 3.99;
+            VIPBANK.ASAAS_PIX_FEE = 3.99;
         }
     } catch (error) {
         console.error('Erro ao carregar taxa Pix:', error);
-        ASAAS_PIX_FEE = 3.99; // Valor padrão em caso de erro
+        ASAAS_PIX_FEE = 3.99;
+        VIPBANK.ASAAS_PIX_FEE = 3.99;
     }
 }
-
-// Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-const functions = firebase.functions();
-
-// Configura persistência local para manter sessão ativa
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
-// Variáveis globais
-let currentUser = null;
-let balance = 0.00;
-let apiKey = '';
-let transactions = [];
-let userPassword = '';
-let userTransPassword = '';
-let userCPF = '';
-let userPixKey = '';
-let pendingTransfer = null;
-let balanceHidden = false;
-let globalUserData = null;
-let qrScanner = null;
-let qrPaymentData = null;
-let adminClickCount = 0;
-let isAdmin = false;
-let unreadTransactions = 0; // Controla transações não visualizadas
-
-// Validação de formatos de chave PIX (duplicada para auth/index.js para manter modularidade)
-const AUTH_CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-const AUTH_CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
-const AUTH_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const AUTH_CELULAR_REGEX = /^\(\d{2}\) 9\d{4}-\d{4}$/;
-const AUTH_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const AUTH_CPF_RAW_REGEX = /^\d{11}$/;
-const AUTH_CNPJ_RAW_REGEX = /^\d{14}$/;
-const AUTH_CELULAR_RAW_REGEX = /^(?:55)?\d{11}$/;
 
 function validatePixKeyAuth(key, type) {
     const cleanKey = key.trim();

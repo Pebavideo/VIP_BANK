@@ -1,7 +1,10 @@
+console.log('✅ src/api/asaas.js carregado');
+
+// Aliases para VIPBANK namespace
+const { db, functions, currentUser, transactions } = VIPBANK;
+
 let qrCodeInstance = null;
 let pixCopiaCola = '';
-const db = firebase.firestore();
-const functions = firebase.functions();
 
 async function gerarCobrancaPix() {
     const valueInput = document.getElementById('deposit-value');

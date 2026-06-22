@@ -1,4 +1,24 @@
-console.log('Script main.js carregado com sucesso');
+alert('Script carregado');
+console.log('✅ src/main.js carregado');
+
+// Aliases para VIPBANK namespace (todas as variáveis globais)
+const { db, functions, ADMIN_EMAIL, regex } = VIPBANK;
+let { 
+    currentUser, balance, transactions, isAdmin, globalUserData, 
+    balanceHidden, apiKey, pendingTransfer, qrScanner, 
+    userPixKey, userTransPassword, userPassword, unreadTransactions,
+    ASAAS_PIX_FEE, qrPaymentData, adminClickCount, userCPF
+} = VIPBANK;
+
+// Regex com alias (usando o namespace único)
+const CPF_REGEX = regex.CPF;
+const CNPJ_REGEX = regex.CNPJ;
+const EMAIL_REGEX = regex.EMAIL;
+const CELULAR_REGEX = regex.CELULAR;
+const UUID_REGEX = regex.UUID;
+const CPF_RAW_REGEX = regex.CPF_RAW;
+const CNPJ_RAW_REGEX = regex.CNPJ_RAW;
+const CELULAR_RAW_REGEX = regex.CELULAR_RAW;
 
 function toggleBalanceVisibility() {
     balanceHidden = !balanceHidden;
@@ -78,22 +98,6 @@ function maskDocumento(input) {
 function maskCPF(input) {
     maskDocumento(input);
 }
-
-// Inicializa Firebase Functions (Firebase já inicializado em auth/index.js)
-const db = firebase.firestore();
-const functions = firebase.functions();
-
-// Validação de formatos de chave PIX
-const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
-const CNPJ_REGEX = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CELULAR_REGEX = /^\(\d{2}\) 9\d{4}-\d{4}$/;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Versões sem formatação para validação extra
-const CPF_RAW_REGEX = /^\d{11}$/;
-const CNPJ_RAW_REGEX = /^\d{14}$/;
-const CELULAR_RAW_REGEX = /^(?:55)?\d{11}$/;
 
 function validatePixKey(key, type) {
     const cleanKey = key.trim();
