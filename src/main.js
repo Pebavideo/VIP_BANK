@@ -1049,16 +1049,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setupBtn = (id, callback, logMsg) => {
         const btn = document.getElementById(id);
+        console.log(`Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
         if (btn) {
             // Remove listeners anteriores se existirem (para evitar duplicação)
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
-            newBtn.addEventListener('click', () => {
+            newBtn.addEventListener('click', (e) => {
+                console.log('Botão clicado! Evento:', e);
                 console.log(logMsg);
                 if (typeof callback === 'function') callback();
                 else console.error(`Função ${callback.name} não encontrada!`);
             });
+            console.log(`Listener adicionado ao botão ${id}`);
+        } else {
+            console.error(`Botão com ID ${id} não encontrado!`);
         }
     };
 

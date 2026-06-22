@@ -484,8 +484,17 @@ async function loadUserData() {
                     initializeNotifications();
                     
                     const container = document.getElementById('login-buttons');
-                    container.innerHTML = ''; // Limpa tudo
                     
+                    // Salvar referência ao botão de cadastro para não perdê-lo
+                    const btnAbrirConta = document.getElementById('btn-abrir-conta');
+                    
+                    // Remover apenas o botão de entrar original
+                    const btnEntrarGoogle = document.getElementById('btn-entrar-google');
+                    if (btnEntrarGoogle) {
+                        btnEntrarGoogle.remove();
+                    }
+                    
+                    // Criar o novo botão de acesso
                     const btnEntrar = document.createElement('button');
                     btnEntrar.innerHTML = 'ACESSAR MEU BANCO VIP';
                     btnEntrar.className = 'btn-confirm';
@@ -497,7 +506,14 @@ async function loadUserData() {
                         entrar(); 
                         updateUI(); 
                     };
-                    container.appendChild(btnEntrar);
+                    
+                    // Adicionar o novo botão no início do container
+                    container.insertBefore(btnEntrar, container.firstChild);
+                    
+                    // Garantir que o botão de cadastro permaneça visível
+                    if (btnAbrirConta && !container.contains(btnAbrirConta)) {
+                        container.appendChild(btnAbrirConta);
+                    }
                     
                     document.getElementById('create-account-form').style.display = 'none';
                 } else {
