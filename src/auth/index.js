@@ -667,6 +667,7 @@ function showCreateAccountForm() {
 async function verificarAntesDeCriar() {
     try {
         // Abre popup do Google Login
+        console.log('Iniciando popup...');
         const provider = new firebase.auth.GoogleAuthProvider();
         const result = await auth.signInWithPopup(provider);
         const user = result.user;
