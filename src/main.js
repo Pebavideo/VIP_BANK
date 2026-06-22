@@ -31,42 +31,45 @@ function detectarTipoDocumento(valor) {
     }
 }
 
-function maskDocumento(input) {
-    let value = input.value.replace(/\D/g, '');
-    const displayElement = document.getElementById('documento-tipo-display');
+function maskDocumento(input) { 
+    const displayElement = document.getElementById('documento-tipo-display'); 
     
-    // Detect document type using the new function
-    const tipo = detectarTipoDocumento(value);
+    // SEGURANÇA: Se o elemento não existir, para a execução aqui para não travar o restante do JS 
+    if (!displayElement) return; 
+ 
+    let value = input.value.replace(/\D/g, ''); 
     
-    if (tipo === 'PESSOA_FISICA') {
-        displayElement.style.display = 'block';
-        displayElement.innerText = 'Tipo de conta detectado: [PESSOA FÍSICA]';
-        displayElement.style.color = 'var(--accent-color)';
-    } else if (tipo === 'EMPRESA_CNPJ') {
-        displayElement.style.display = 'block';
-        displayElement.innerText = 'Tipo de conta detectado: [EMPRESA/CNPJ]';
-        displayElement.style.color = 'var(--accent-color)';
-    } else if (value.length > 0 && value.length !== 11 && value.length !== 14) {
-        displayElement.style.display = 'block';
-        displayElement.innerText = 'Documento inválido';
-        displayElement.style.color = 'var(--danger-color)';
-    } else {
-        displayElement.style.display = 'none';
-    }
+    // Detect document type 
+    const tipo = detectarTipoDocumento(value); 
     
-    // Apply mask
-    if (value.length <= 11) {
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d)/, '$1.$2');
-        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    } else {
-        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-        value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
-    }
+    if (tipo === 'PESSOA_FISICA') { 
+        displayElement.style.display = 'block'; 
+        displayElement.innerText = 'Tipo de conta detectado: [PESSOA FÍSICA]'; 
+        displayElement.style.color = 'var(--accent-color)'; 
+    } else if (tipo === 'EMPRESA_CNPJ') { 
+        displayElement.style.display = 'block'; 
+        displayElement.innerText = 'Tipo de conta detectado: [EMPRESA/CNPJ]'; 
+        displayElement.style.color = 'var(--accent-color)'; 
+    } else if (value.length > 0 && value.length !== 11 && value.length !== 14) { 
+        displayElement.style.display = 'block'; 
+        displayElement.innerText = 'Documento inválido'; 
+        displayElement.style.color = 'var(--danger-color)'; 
+    } else { 
+        displayElement.style.display = 'none'; 
+    } 
     
-    input.value = value;
+    // Apply mask 
+    if (value.length <= 11) { 
+        value = value.replace(/(\d{3})(\d)/, '$1.$2'); 
+        value = value.replace(/(\d{3})(\d)/, '$1.$2'); 
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2'); 
+    } else { 
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2'); 
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3'); 
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2'); 
+        value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2'); 
+    } 
+    input.value = value; // Garante que o valor mascarado apareça no input 
 }
 
 // Keep maskCPF for backwards compatibility
@@ -1045,35 +1048,44 @@ function checkTimeAndApplyTheme() {
 setInterval(checkTimeAndApplyTheme, 60000);
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ Inicializando sistema de botões...');
+    try {
+        console.log('✅ Inicializando sistema de botões...');
 
-    const setupBtn = (id, callback, logMsg) => {
-        const btn = document.getElementById(id);
-        console.log(`Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
-        if (btn) {
-            // Remove listeners anteriores se existirem (para evitar duplicação)
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', (e) => {
-                console.log('Botão clicado! Evento:', e);
-                console.log(logMsg);
-                if (typeof callback === 'function') callback();
-                else console.error(`Função ${callback.name} não encontrada!`);
-            });
-            console.log(`Listener adicionado ao botão ${id}`);
-        } else {
-            console.error(`Botão com ID ${id} não encontrado!`);
-        }
-    };
+        const setupBtn = (id, callback, logMsg) => {
+            try {
+                const btn = document.getElementById(id);
+                console.log(`Buscando botão com ID: ${id} - Encontrado?`, btn); // Log de diagnóstico
+                if (btn) {
+                    // Remove listeners anteriores se existirem (para evitar duplicação)
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    
+                    newBtn.addEventListener('click', (e) => {
+                        console.log('Botão clicado! ID:', id, 'Evento:', e);
+                        console.log(logMsg);
+                        if (typeof callback === 'function') callback();
+                        else console.error(`Função ${callback.name} não encontrada!`);
+                    });
+                    console.log(`✅ Listener adicionado ao botão ${id}`);
+                } else {
+                    console.error(`❌ Botão com ID ${id} não encontrado!`);
+                }
+            } catch (error) {
+                console.error(`❌ Erro ao configurar botão ${id}:`, error);
+            }
+        };
 
-    setupBtn('btn-entrar-google', signInWithGoogle, "Tentando logar via Google...");
-    setupBtn('btn-abrir-conta', verificarAntesDeCriar, "Abrindo formulário de cadastro...");
+        setupBtn('btn-entrar-google', signInWithGoogle, "Tentando logar via Google...");
+        setupBtn('btn-abrir-conta', verificarAntesDeCriar, "Abrindo formulário de cadastro...");
 
-    loadUserData();
-    checkTimeAndApplyTheme();
-    updateUI();
-    updateProfitDisplay();
+        loadUserData();
+        checkTimeAndApplyTheme();
+        updateUI();
+        updateProfitDisplay();
+        console.log('✅ Sistema de botões inicializado com sucesso!');
+    } catch (error) {
+        console.error('❌ Erro crítico ao inicializar sistema:', error);
+    }
 });
 
 // Segurança: Encerra sessão ao fechar ou ocultar a aba
