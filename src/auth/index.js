@@ -11,6 +11,25 @@ const ADMIN_EMAIL = 'jjoserobertorocharocha@gmail.com';
 // Variável global para taxa Pix dinâmica
 let ASAAS_PIX_FEE = 3.99;
 
+async function loadPixFee() {
+    try {
+        const adminDoc = await db.collection('admin').doc('configuracoes').get();
+        if (adminDoc.exists && adminDoc.data().valor_taxa_pix) {
+            ASAAS_PIX_FEE = adminDoc.data().valor_taxa_pix;
+        } else {
+            // Se não existir, cria com valor padrão
+            await db.collection('admin').doc('configuracoes').set({
+                valor_taxa_pix: 3.99,
+                lucro_total: 0
+            }, { merge: true });
+            ASAAS_PIX_FEE = 3.99;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar taxa Pix:', error);
+        ASAAS_PIX_FEE = 3.99; // Valor padrão em caso de erro
+    }
+}
+
 // Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
