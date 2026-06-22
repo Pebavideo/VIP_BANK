@@ -1287,3 +1287,47 @@ function updateBalanceAndTransactions(newBalance, newTransactions) {
     saveData();
     updateUI();
 }
+
+// Função de force login para o dono do sistema
+async function forceLogin() {
+    console.log('🔑 Forçando login de dono...');
+    const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
+    
+    try {
+        // 1. Tenta buscar o documento do dono diretamente no Firestore
+        const userDoc = await db.collection('usuarios').doc(OWNER_UID).get();
+        
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            console.log('✅ Dados do dono carregados:', userData);
+            
+            // 2. Atualiza as variáveis globais
+            currentUser = {
+                uid: OWNER_UID,
+                email: userData.email,
+                displayName: userData.nome
+            };
+            globalUserData = userData;
+            balance = userData.balance || 0;
+            transactions = userData.transactions || [];
+            
+            // 3. Mostra o painel principal
+            entrar();
+            updateUI();
+            updateProfitDisplay();
+            initializeNotifications();
+            
+            console.log('✅ Login de dono concluído com sucesso!');
+        } else {
+            console.error('❌ Documento do dono não encontrado no Firestore');
+            toast('Conta do dono não encontrada', 'erro');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao forçar login:', error);
+        toast('Erro ao acessar conta do dono', 'erro');
+    }
+}
+
+// Vincula a função ao objeto window para acesso global
+window.forceLogin = forceLogin;
+console.log('✅ Função window.forceLogin disponível globalmente');
