@@ -1,3 +1,5 @@
+console.log('Script main.js carregado com sucesso');
+
 function toggleBalanceVisibility() {
     balanceHidden = !balanceHidden;
     const eyeIcon = document.getElementById('balance-eye');

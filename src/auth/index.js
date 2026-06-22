@@ -590,6 +590,16 @@ async function verificarLogin() {
 // Vincula a função ao window para acesso global
 window.verificarLogin = verificarLogin;
 
+window.iniciarLogin = async function() { 
+    console.log('Login iniciado via clique direto'); 
+    await verificarLogin(); 
+};
+
+window.abrirConta = async function() {
+    console.log('Abrir conta iniciado via clique direto');
+    await verificarAntesDeCriar();
+};
+
 // Função de login com Google (mantida para compatibilidade)
 async function signInWithGoogle() {
     console.log('Botão clicado com sucesso!');
