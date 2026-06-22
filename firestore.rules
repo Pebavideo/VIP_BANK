@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Regra para a coleção admin (apenas o dono pode acessar)
+    match /admin/configuracoes {
+      allow read, write: if request.auth != null && request.auth.token.email == 'jjoserobertorocharocha@gmail.com';
+    }
+    
+    // Regras para a coleção usuarios
+    match /usuarios/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Permite escrever, mas NÃO PODE ALTERAR O CAMPO balance!
+      allow write: if request.auth != null && 
+                     request.auth.uid == userId && 
+                     !(('balance' in request.resource.data) && (request.resource.data.balance != resource.data.balance));
+    }
+    
+    // Regras para a coleção transacoes
+    match /transacoes/{transacaoId} {
+      // Qualquer usuário autenticado pode criar uma transação (para depósitos)
+      allow create: if request.auth != null;
+      // Apenas o dono da transação pode ler
+      allow read: if request.auth != null && request.auth.uid == resource.data.usuarioId;
+      // APENAS a Cloud Function (Admin SDK) pode marcar como CONFIRMADO!
+      // Client só pode alterar se status NÃO ficar CONFIRMADO ou se não alterar status
+      allow update: if 
+        // Caso 1: Admin/Cloud Function
+        request.auth.token.email == 'jjoserobertorocharocha@gmail.com' || 
+        // Caso 2: Usuário normal, mas não está alterando o status para CONFIRMADO
+        (
+          request.auth != null && 
+          request.auth.uid == resource.data.usuarioId && 
+          !(request.resource.data.status == 'CONFIRMADO' && resource.data.status != 'CONFIRMADO')
+        );
+    }
+  }
+}

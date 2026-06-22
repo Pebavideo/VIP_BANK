@@ -1,0 +1,13 @@
+{
+  "name": "vip-bank",
+  "version": "1.0.0",
+  "description": "VIP Bank - Simulador Bancário",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Build completed successfully!'"
+  },
+  "keywords": ["banking", "simulator", "pix"],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,164 @@
+:root {
+    --bg-color: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --accent-color: #ff9800;
+    --success-color: #00c851;
+    --danger-color: #ff5252;
+    --glass-bg: rgba(10, 10, 10, 0.8);
+    --light-bg: #f8f9fa;
+    --light-text: #1a1a1a;
+    --light-secondary: #6c757d;
+    --light-accent: #ff9800;
+    --light-success: #00c851;
+    --light-danger: #ff5252;
+    --light-card-bg: #ffffff;
+    --light-glass-bg: rgba(255, 255, 255, 0.8);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+@media (max-width: 600px) {
+    body { font-size: 16px; }
+    
+    /* Escala de fontes */
+    .text-secondary, .logo-login span, .modal h4, .trans-item .trans-details div:last-child { font-size: 14px !important; }
+    .text-primary, .modal h3, .trans-item .trans-details div:first-child, .balance-label { font-size: 18px !important; }
+    .balance-value, #receipt-amount, .receipt-amount { font-size: 24px !important; }
+    
+    /* Tamanho dos botões */
+    .btn-confirm, .btn-cancel, .btn-action { min-height: 56px; }
+    
+    /* Espaçamento melhorado */
+    .input-field, .btn-confirm, .btn-cancel { padding: 18px 20px !important; }
+    .btn-action { padding: 20px !important; }
+    
+    /* Inputs com font-size fixo */
+    input[type="password"], input[type="text"][maxlength="14"], input[type="tel"][maxlength="15"], .input-field { font-size: 16px !important; }
+    
+    /* Modal de recibo otimizado */
+    .modal { width: 92% !important; max-width: 450px !important; padding: 30px 24px !important; border-radius: 28px !important; }
+    .modal h3 { font-size: 22px !important; }
+    .modal-receipt-content { width: 100%; }
+    .receipt-actions .btn-confirm { min-height: 56px; font-size: 16px; }
+    
+    /* Conserte o Saldo no Mobile */
+    .balance-value { letter-spacing: -1px; }
+    
+    /* Ajustes gerais */
+    .balance-card { padding: 25px 20px; }
+    .actions { gap: 12px; }
+    #dashboard { padding: 15px; }
+    
+    /* Garantir alinhamento perfeito dos botões de login no mobile */
+    #login-buttons { display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important; }
+    .btn-access, .btn-google, .btn-outline { width: 90% !important; max-width: 350px !important; margin: 12px auto !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }
+}
+
+/* --- TELA DE LOGIN --- */
+#login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; padding: 20px; text-align: center; }
+.logo-login { font-size: clamp(24px, 8vw, 40px); font-weight: 800; color: var(--text-primary); margin-bottom: 20px; }
+.logo-login span { color: var(--accent-color); }
+.welcome-text { color: #a0a0a0; font-size: 16px; margin-bottom: 40px; font-weight: 400; }
+#login-buttons { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.btn-access, .btn-google { display: flex; align-items: center; justify-content: center; width: 90%; max-width: 350px; margin: 12px auto; padding: 18px 0; border-radius: 16px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; transition: all 0.3s ease; box-sizing: border-box; border: none; font-size: 18px; }
+.btn-access { background-color: var(--accent-color); color: #000; display: none; }
+.btn-access:hover { transform: translateY(-2px); background: #e68900; }
+.btn-google { background: white; color: #333; border: 1px solid #ddd; gap: 10px; font-weight: 600; }
+.btn-google:hover { background: #f5f5f5; transform: translateY(-2px); }
+.btn-outline { background-color: transparent; border: 2px solid var(--accent-color); color: var(--accent-color); padding: 20px; font-size: 18px; font-weight: 700; border-radius: 16px; cursor: pointer; width: 90%; max-width: 350px; margin: 12px auto; transition: all 0.3s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; display: block; box-sizing: border-box; }
+#login-buttons .btn-outline { display: block !important; }
+.btn-outline:hover { background-color: var(--accent-color); color: #000; }
+.form-container { display: none; width: 100%; max-width: 350px; margin: 0 auto; padding-bottom: 50px; }
+.form-container::-webkit-scrollbar { display: none; }
+.form-label { display: block; text-align: left; font-size: 14px; margin-bottom: 5px; color: var(--accent-color); font-weight: 600; }
+.form-field { width: 100%; padding: 16px; background: #111; border: 1px solid #333; color: white; border-radius: 14px; margin-bottom: 15px; outline: none; font-size: 16px; }
+
+header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-bg); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.user-avatar { width: 38px; height: 38px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; }
+
+#main-content { display: none; }
+#dashboard { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; }
+
+.balance-card { background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%); padding: 30px; border-radius: 28px; border: 1px solid #333; margin-bottom: 25px; }
+.balance-card.light-mode { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
+.balance-value { font-size: 32px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+.balance-label { color: var(--text-secondary); margin-bottom: 10px; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+.btn-action { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; background: var(--card-bg); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.3s; flex: 1; min-width: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+.btn-action.light-mode { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
+.btn-action:hover { transform: translateY(-2px); background: #252525; }
+.btn-action i { font-size: 24px; color: var(--accent-color); }
+.btn-action.light-mode i { color: var(--light-accent); }
+.btn-action span { font-size: 12px; font-weight: 600; }
+.btn-action.hidden { display: none !important; }
+
+/* Ícones no modo claro */
+.light-mode #balance-eye { color: var(--light-secondary) !important; }
+.light-mode .btn-action i { color: var(--light-secondary) !important; }
+
+.modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); padding: 30px 24px; border-radius: 28px; border: 1px solid var(--accent-color); z-index: 2600; width: 92%; max-width: 450px; max-height: 85vh; overflow-y: auto; margin: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+.modal h3 { font-size: 22px; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2550; }
+
+.input-field { width: 100%; min-height: 58px; padding: 18px 25px; background: #111; border: 1px solid #333; color: white; border-radius: 16px; margin-bottom: 15px; outline: none; font-size: 16px; }
+.btn-confirm { background: var(--accent-color); color: black; border: none; padding: 16px; width: 90%; max-width: 350px; margin: 12px auto; min-height: 56px; border-radius: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; font-size: 16px; display: block; }
+.btn-confirm:hover { transform: translateY(-2px); background: #e68900; }
+.btn-cancel { background: #333; border: 1px solid #444; color: #fff; padding: 16px; width: 90%; max-width: 350px; margin: 12px auto; min-height: 56px; border-radius: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; transition: background 0.2s; font-size: 16px; display: block; }
+.btn-cancel:hover { background: #444; }
+.btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+.trans-item { cursor: pointer; transition: background 0.2s; }
+.trans-item:hover { background: rgba(255, 152, 0, 0.1); border-radius: 12px; padding: 18px 12px; }
+.trans-details { display: flex; flex-direction: column; }
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.receipt-actions { display: flex; gap: 10px; margin-top: 20px; }
+.receipt-actions .btn-confirm { flex: 1; }
+
+#btn-finalizar-cadastro {
+    width: 100% !important;
+    max-width: 350px !important;
+    height: 56px;
+    margin: 30px auto !important;
+    display: block !important;
+    background: var(--accent-color);
+    border-radius: 14px;
+    color: black;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+.receipt-amount { font-size: 24px; font-weight: 700; color: var(--accent-color); }
+@media print { body * { visibility: hidden; } .modal-receipt-content, .modal-receipt-content * { visibility: visible; } .modal-receipt-content { position: absolute; left: 0; top: 0; width: 100%; } }
+
+#error-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 12px; z-index: 4000; font-weight: 600; }
+
+/* Forçar visibilidade em dispositivos móveis */
+.btn-action { display: flex !important; }
+
+.btn-confirm { display: block !important; }
+.btn-cancel { display: block !important; }
+.menu-item { display: flex !important; }
+.trans-item { display: flex !important; }
+
+/* Regra de impressão profissional */
+@media print {
+    body * { visibility: hidden; }
+    .modal-receipt-content, .modal-receipt-content * { visibility: visible; }
+    .modal-receipt-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+        padding: 40px;
+        box-sizing: border-box;
+    }
+    /* Hide action buttons when printing */
+    .receipt-actions { display: none !important; }
+    .modal-receipt-content .text-primary { color: black !important; }
+    .modal-receipt-content .text-secondary { color: #666 !important; }
+}

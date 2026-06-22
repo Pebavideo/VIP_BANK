@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "vip-bank-f183b"
+  },
+  "targets": {
+    "vip-bank-f183b": {
+      "hosting": {
+        "main": [
+          "vipbankoficial"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
