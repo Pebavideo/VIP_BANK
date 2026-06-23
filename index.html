@@ -477,7 +477,7 @@
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
     <script src="src/core.js"></script>
     
-    <!-- Carregar auth/index.js (funções de login) DEPOIS core.js, ANTES main.js -->
+    <!-- Ordem correta: core.js → auth/index.js → main.js → api/asaas.js (usa funções das outras) -->
     <script src="src/auth/index.js"></script>
     <script src="src/main.js"></script>
     <script src="src/api/asaas.js"></script>
