@@ -477,9 +477,9 @@
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
     <script src="src/core.js"></script>
     
-    <!-- Carregar main.js primeiro (contém funções globais como toast, showModal) -->
-    <script src="src/main.js"></script>
+    <!-- Carregar auth/index.js (funções de login) DEPOIS core.js, ANTES main.js -->
     <script src="src/auth/index.js"></script>
+    <script src="src/main.js"></script>
     <script src="src/api/asaas.js"></script>
 </body>
 </html>
