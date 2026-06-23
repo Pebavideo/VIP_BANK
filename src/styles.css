@@ -91,8 +91,8 @@ header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-b
 .balance-value { font-size: 32px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
 .balance-label { color: var(--text-secondary); margin-bottom: 10px; }
 
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-.btn-action { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; background: var(--card-bg); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.3s; flex: 1; min-width: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; position: relative; z-index: 5000; }
+.btn-action { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; background: var(--card-bg); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer; transition: all 0.3s; flex: 1; min-width: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; position: relative; z-index: 5001; pointer-events: auto !important; }
 .btn-action.light-mode { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
 .btn-action:hover { transform: translateY(-2px); background: #252525; }
 .btn-action i { font-size: 24px; color: var(--accent-color); }
