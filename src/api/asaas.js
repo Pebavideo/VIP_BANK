@@ -1,4 +1,4 @@
-console.log('✅ src/api/asaas.js carregado');
+
 
 // TODOS OS ACESSOS DIRETOS VIA VIPBANK (sem redeclarações!)
 let qrCodeInstance = null;
@@ -202,3 +202,9 @@ function resetarModalDeposito() {
         qrCodeInstance = null;
     }
 }
+
+// Vincula funções ao window para acesso global
+window.gerarCobrancaPix = gerarCobrancaPix;
+window.copiarPix = copiarPix;
+window.fallbackCopyPix = fallbackCopyPix;
+window.resetarModalDeposito = resetarModalDeposito;

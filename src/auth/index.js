@@ -1,5 +1,4 @@
-// Arquivo migrado para usar VIPBANK namespace EXCLUSIVO! Nenhuma declaração duplicada!
-console.log('✅ src/VIPBANK.auth/index.js carregado');
+// Arquivo migrado para usar VIPBANK namespace EXCLUSIVO!
 
 // Todos os acessos são DIRETOS via VIPBANK.nome (sem redeclarações const/let)
 // Exemplo de uso: VIPBANK.db, VIPBANK.auth, VIPBANK.isAdmin
@@ -263,46 +262,8 @@ async function auditarPrecisaoSaldo() {
     }
 }
 
-// Teste de Simulação: Cenário ZeCar
-function testeZeCar() {
-    console.log('=== TESTE DE PRECISÃO - ZECAR ===');
-    console.log('Simulando transações: +500, -30, +600');
-    
-    // Simular transações
-    const transacoesTeste = [
-        { valor: 500, tipo: 'ENTRADA', status: 'CONFIRMADO' },
-        { valor: 30, tipo: 'SAIDA', status: 'CONFIRMADO' },
-        { valor: 600, tipo: 'ENTRADA', status: 'CONFIRMADO' }
-    ];
-    
-    let saldoEmCentavos = 0;
-    transacoesTeste.forEach(transacao => {
-        const valorEmCentavos = Math.round(parseFloat(transacao.valor) * 100);
-        if (transacao.tipo === 'ENTRADA') {
-            saldoEmCentavos += valorEmCentavos;
-        } else if (transacao.tipo === 'SAIDA') {
-            saldoEmCentavos -= valorEmCentavos;
-        }
-    });
-    
-    const saldoFinal = saldoEmCentavos / 100;
-    const saldoEsperado = 1070;
-    
-    console.log(`Saldo Calculado: R$ ${saldoFinal.toFixed(2)}`);
-    console.log(`Saldo Esperado: R$ ${saldoEsperado.toFixed(2)}`);
-    
-    if (Math.abs(saldoFinal - saldoEsperado) < 0.01) {
-        console.log('✅ TESTE PASSEI! Precisão perfeita!');
-        return true;
-    } else {
-        console.error('❌ TESTE FALHOU! Divergência de precisão!');
-        return false;
-    }
-}
-// Executar teste automaticamente no carregamento para validação inicial
-setTimeout(() => {
-    testeZeCar();
-}, 1000);
+
+
 
 // Função para carregar dados do painel admin
 async function loadAdminData() {
@@ -457,7 +418,7 @@ async function loadUserData() {
                     
                     // Como o ID já foi validado, entra direto
                     btnAcessar.onclick = () => { 
-                        console.log('Botão ACESSAR MEU BANCO VIP clicado com sucesso!');
+
                         entrar(); 
                         updateUI(); 
                     };
@@ -499,7 +460,7 @@ async function saveUserData() {
 
 // Função principal de verificação de login
 async function verificarLogin() {
-    console.log('🔐 Iniciando verificação de login...');
+
     const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
     
     try {
@@ -508,18 +469,17 @@ async function verificarLogin() {
         
         if (!user) {
             // 2. Se não tem usuário logado, abre o popup do Google
-            console.log('⚠️ Nenhum usuário logado. Abrindo popup do Google...');
+
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
             const result = await VIPBANK.auth.signInWithPopup(provider);
             user = result.user;
         }
         
-        console.log('✅ Usuário autenticado:', user.uid);
+
         
         // 3. Verifica se é o dono do sistema
         if (user.uid === OWNER_UID) {
-            console.log('👑 Dono detectado! Logando direto...');
             const userDoc = await VIPBANK.db.collection('usuarios').doc(OWNER_UID).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
@@ -531,13 +491,9 @@ async function verificarLogin() {
                 updateUI();
                 updateProfitDisplay();
                 initializeNotifications();
-                console.log('✅ Dono logado com sucesso!');
                 return;
             }
         }
-        
-        // 4. Se não é o dono, continua com o fluxo normal
-        console.log('📝 Verificando conta no Firestore...');
         const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
         if (userDoc.exists) {
             toast('Identidade VIP detectada! Por favor, confirme sua senha para entrar.', false);
@@ -557,11 +513,10 @@ async function verificarLogin() {
 // Vincula funções ao window para acesso global
 window.verificarLogin = verificarLogin;
 window.iniciarLogin = async function() { 
-    console.log('Login iniciado via clique direto'); 
     await verificarLogin(); 
 };
+
 window.abrirConta = async function() {
-    console.log('Abrir conta iniciado via clique direto');
     await verificarAntesDeCriar();
 };
 window.signInWithGoogle = signInWithGoogle;
@@ -582,18 +537,15 @@ window.validarTransacaoObrigatoria = validarTransacaoObrigatoria;
 window.loadAdminData = loadAdminData;
 window.calcularSaldoAtualizado = calcularSaldoAtualizado;
 window.auditarPrecisaoSaldo = auditarPrecisaoSaldo;
-window.testeZeCar = testeZeCar;
 window.deletarMinhaConta = deletarMinhaConta;
 window.verificarSenhaEncerramento = verificarSenhaEncerramento;
 window.encerrarContaVIP = encerrarContaVIP;
 window.loadPixFee = loadPixFee;
 window.validatePixKeyAuth = validatePixKeyAuth;
 window.formatPixKeyAuth = formatPixKeyAuth;
-console.log('✅ Todas as funções de auth/index.js disponíveis globalmente!');
 
 // Função de login com Google (mantida para compatibilidade)
 async function signInWithGoogle() {
-    console.log('Botão clicado com sucesso!');
     await verificarLogin();
 }
 

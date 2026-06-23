@@ -1,7 +1,6 @@
 // ==========================================
 // VIP BANK - ARQUIVO CENTRAL (ÚNICA FONTE DE VERDADE)
 // ==========================================
-console.log('✅ VIP BANK - Core carregado');
 
 // Configuração do Firebase (apenas aqui!)
 const firebaseConfig = {
@@ -13,7 +12,6 @@ const firebaseConfig = {
 // Inicialização do Firebase (apenas aqui!)
 try {
     firebase.initializeApp(firebaseConfig);
-    console.log('✅ Firebase inicializado com sucesso');
 } catch (e) {
     // Se já inicializou (hot reload), ignora erro
     if (!e.message.includes('already exists')) {
@@ -68,4 +66,3 @@ window.VIPBANK = {
 
 // Configura persistência de autenticação
 VIPBANK.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-console.log('✅ Namespace VIPBANK criado com sucesso');

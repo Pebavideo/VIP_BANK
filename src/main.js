@@ -1,5 +1,4 @@
-alert('Script carregado');
-console.log('✅ src/main.js carregado');
+
 
 // TODOS OS ACESSOS SÃO DIRETOS VIA VIPBANK (sem redeclarações!)
 const ADMIN_EMAIL = VIPBANK.ADMIN_EMAIL;
@@ -253,7 +252,6 @@ function toggleAdminMode() {
 }
 
 function showModal(id) {
-    console.log('🔍 showModal() chamado com id:', id); // Log de auditoria
     if (id === 'modal-config' && VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem acessar configurações.', 'erro');
         console.error('Tentativa de acesso não autorizado às configurações:', VIPBANK.currentUser.email);
@@ -262,8 +260,6 @@ function showModal(id) {
     
     const overlay = document.getElementById('modal-overlay');
     const modal = document.getElementById(id);
-    console.log('🔍 Overlay element:', overlay);
-    console.log('🔍 Modal element:', modal);
     
     if (overlay) overlay.style.display = 'block';
     if (modal) modal.style.display = 'block';
@@ -765,7 +761,6 @@ function updateUI() {
 }
 
 function startQRScanner() {
-    console.log('🔍 startQRScanner() chamado!'); // Log de auditoria
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast('Seu navegador não suporta acesso à câmera', 'erro');
         return;
@@ -1056,37 +1051,26 @@ setInterval(checkTimeAndApplyTheme, 60000);
 
 // Listener direto e simples para os botões
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ Inicializando sistema de botões...');
-
     // Botão Entrar
     const btnEntrar = document.getElementById('btn-entrar-google');
     if (btnEntrar) {
         btnEntrar.onclick = async (e) => {
-            console.log('👆 Botão Entrar clicado. Iniciando verificação...');
             await window.verificarLogin();
         };
-        console.log('✅ Listener do botão Entrar configurado');
-    } else {
-        console.error('❌ Botão Entrar não encontrado!');
     }
 
     // Botão Abrir Conta
     const btnAbrirConta = document.getElementById('btn-abrir-conta');
     if (btnAbrirConta) {
         btnAbrirConta.onclick = async (e) => {
-            console.log('👆 Botão Abrir Conta clicado...');
             await verificarAntesDeCriar();
         };
-        console.log('✅ Listener do botão Abrir Conta configurado');
-    } else {
-        console.error('❌ Botão Abrir Conta não encontrado!');
     }
 
     loadUserData();
     checkTimeAndApplyTheme();
     updateUI();
     updateProfitDisplay();
-    console.log('✅ Sistema inicializado com sucesso!');
 });
 
 // Segurança: Encerra sessão ao fechar ou ocultar a aba
@@ -1194,8 +1178,6 @@ async function savePixFee() {
 }
 
 async function deletarMinhaConta() {
-    console.log('🔍 deletarMinhaConta() chamado!'); // Log de auditoria
-    
     // Regra 1: Verificar saldo é 0
     if (VIPBANK.balance > 0) {
         toast('Saque todo o saldo antes de encerrar!', 'erro');
@@ -1251,7 +1233,6 @@ function updateBalanceAndTransactions(newBalance, newTransactions) {
 
 // Função de force login para o dono do sistema
 async function forceLogin() {
-    console.log('🔑 Forçando login de dono...');
     const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
     
     try {
@@ -1260,7 +1241,6 @@ async function forceLogin() {
         
         if (userDoc.exists) {
             const userData = userDoc.data();
-            console.log('✅ Dados do dono carregados:', userData);
             
             // 2. Atualiza as variáveis globais
             VIPBANK.currentUser = {
@@ -1277,8 +1257,6 @@ async function forceLogin() {
             updateUI();
             updateProfitDisplay();
             initializeNotifications();
-            
-            console.log('✅ Login de dono concluído com sucesso!');
         } else {
             console.error('❌ Documento do dono não encontrado no Firestore');
             toast('Conta do dono não encontrada', 'erro');
@@ -1330,4 +1308,3 @@ window.savePixFee = savePixFee;
 window.deletarMinhaConta = deletarMinhaConta;
 window.saveData = saveData;
 window.updateBalanceAndTransactions = updateBalanceAndTransactions;
-console.log('✅ Todas as funções principais disponíveis globalmente!');
