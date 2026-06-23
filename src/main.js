@@ -1054,20 +1054,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Botão Entrar
     const btnEntrar = document.getElementById('btn-entrar-google');
     if (btnEntrar) {
-        btnEntrar.onclick = async (e) => {
-            await window.verificarLogin();
-        };
+        btnEntrar.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (window.iniciarLogin) {
+                await window.iniciarLogin();
+            } else if (window.verificarLogin) {
+                await window.verificarLogin();
+            }
+        });
     }
 
     // Botão Abrir Conta
     const btnAbrirConta = document.getElementById('btn-abrir-conta');
     if (btnAbrirConta) {
-        btnAbrirConta.onclick = async (e) => {
-            await verificarAntesDeCriar();
-        };
+        btnAbrirConta.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (window.abrirConta) {
+                await window.abrirConta();
+            }
+        });
     }
 
-    loadUserData();
+    // Link Privacidade
+    const privacyLink = document.getElementById('privacy-link');
+    if (privacyLink) {
+        privacyLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (window.showModal) {
+                window.showModal('modal-privacy');
+            }
+        });
+    }
+
+    if (window.loadUserData) {
+        window.loadUserData();
+    }
     checkTimeAndApplyTheme();
     updateUI();
     updateProfitDisplay();

@@ -511,43 +511,47 @@ async function verificarLogin() {
         toast('Erro ao acessar conta. Tente novamente.', 'erro');
     }
 }
-window.verificarLogin = verificarLogin;
 
 // Função iniciarLogin (wrapper para verificarLogin)
 async function iniciarLogin() {
     await verificarLogin();
 }
-window.iniciarLogin = iniciarLogin;
 
 // Função abrirConta
 async function abrirConta() {
     await verificarAntesDeCriar();
 }
-window.abrirConta = abrirConta;
-window.signInWithGoogle = signInWithGoogle;
-window.resetPasswordManual = resetPasswordManual;
-window.entrarComCredenciais = entrarComCredenciais;
-window.entrar = entrar;
-window.sairComSeguranca = sairComSeguranca;
-window.showCreateAccountForm = showCreateAccountForm;
-window.verificarAntesDeCriar = verificarAntesDeCriar;
-window.backToLogin = backToLogin;
-window.handleRegistration = handleRegistration;
-window.finalizeAccount = finalizeAccount;
-window.togglePixInput = togglePixInput;
-window.loadUserData = loadUserData;
-window.saveUserData = saveUserData;
-window.gerarAuthCode = gerarAuthCode;
-window.validarTransacaoObrigatoria = validarTransacaoObrigatoria;
-window.loadAdminData = loadAdminData;
-window.calcularSaldoAtualizado = calcularSaldoAtualizado;
-window.auditarPrecisaoSaldo = auditarPrecisaoSaldo;
-window.deletarMinhaConta = deletarMinhaConta;
-window.verificarSenhaEncerramento = verificarSenhaEncerramento;
-window.encerrarContaVIP = encerrarContaVIP;
-window.loadPixFee = loadPixFee;
-window.validatePixKeyAuth = validatePixKeyAuth;
-window.formatPixKeyAuth = formatPixKeyAuth;
+
+// Vincula todas as funções ao window após DOM carregar
+window.addEventListener('DOMContentLoaded', () => {
+    window.verificarLogin = verificarLogin;
+    window.iniciarLogin = iniciarLogin;
+    window.abrirConta = abrirConta;
+    window.signInWithGoogle = signInWithGoogle;
+    window.resetPasswordManual = resetPasswordManual;
+    window.entrarComCredenciais = entrarComCredenciais;
+    window.entrar = entrar;
+    window.sairComSeguranca = sairComSeguranca;
+    window.showCreateAccountForm = showCreateAccountForm;
+    window.verificarAntesDeCriar = verificarAntesDeCriar;
+    window.backToLogin = backToLogin;
+    window.handleRegistration = handleRegistration;
+    window.finalizeAccount = finalizeAccount;
+    window.togglePixInput = togglePixInput;
+    window.loadUserData = loadUserData;
+    window.saveUserData = saveUserData;
+    window.gerarAuthCode = gerarAuthCode;
+    window.validarTransacaoObrigatoria = validarTransacaoObrigatoria;
+    window.loadAdminData = loadAdminData;
+    window.calcularSaldoAtualizado = calcularSaldoAtualizado;
+    window.auditarPrecisaoSaldo = auditarPrecisaoSaldo;
+    window.deletarMinhaConta = deletarMinhaConta;
+    window.verificarSenhaEncerramento = verificarSenhaEncerramento;
+    window.encerrarContaVIP = encerrarContaVIP;
+    window.loadPixFee = loadPixFee;
+    window.validatePixKeyAuth = validatePixKeyAuth;
+    window.formatPixKeyAuth = formatPixKeyAuth;
+});
 
 // Função de login com Google (mantida para compatibilidade)
 async function signInWithGoogle() {
