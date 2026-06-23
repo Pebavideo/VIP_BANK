@@ -1194,23 +1194,44 @@ async function savePixFee() {
 }
 
 async function deletarMinhaConta() {
-    const confirmar = confirm("ATENÇÃO: Esta ação é irreversível! Seu saldo, chaves e extratos serão apagados para sempre. Deseja continuar?");
-    if (!confirmar) return;
-
-    const senha = prompt("Por segurança, digite sua SENHA DE ACESSO para confirmar a exclusão:");
-    if (senha !== VIPBANK.globalUserData.senha) {
-        toast("Senha incorreta! Operação cancelada.", "erro");
+    console.log('🔍 deletarMinhaConta() chamado!'); // Log de auditoria
+    
+    // Regra 1: Verificar saldo é 0
+    if (VIPBANK.balance > 0) {
+        toast('Saque todo o saldo antes de encerrar!', 'erro');
+        console.error('Tentativa de encerrar conta com saldo:', VIPBANK.balance);
         return;
     }
 
+    // Regra 2: Confirmação inicial
+    const confirmar = confirm("ATENÇÃO: Esta ação é irreversível! Seu saldo, chaves e extratos serão apagados para sempre. Deseja continuar?");
+    if (!confirmar) return;
+
+    // Regra 3: Pedir senha e validar
+    const senha = prompt("Por segurança, digite sua SENHA DE ACESSO para confirmar a exclusão:");
+    if (!senha) {
+        toast('Senha não digitada!', 'erro');
+        return;
+    }
+    if (senha !== VIPBANK.globalUserData.senha) {
+        toast("Senha incorreta! Operação cancelada.", "erro");
+        console.error('Senha incorreta para encerramento de conta!');
+        return;
+    }
+
+    // Regra 4: Deletar via Cloud Function
     try {
         const deletarConta = VIPBANK.functions.httpsCallable('deletarContaUsuario');
         await deletarConta();
         
+        // Limpar localStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
         alert("Conta VIP encerrada com sucesso. Seus dados foram removidos.");
         location.reload(); // Volta para a tela de login inicial
     } catch (error) {
-        console.error(error);
+        console.error('Erro ao encerrar conta:', error);
         toast("Erro ao encerrar conta. Tente relogar e tentar novamente.", "erro");
     }
 }
@@ -1268,6 +1289,45 @@ async function forceLogin() {
     }
 }
 
-// Vincula a função ao objeto window para acesso global
+// Vincula funções ao objeto window para acesso global via HTML onclick
 window.forceLogin = forceLogin;
-console.log('✅ Função window.forceLogin disponível globalmente');
+window.showModal = showModal;
+window.startQRScanner = startQRScanner;
+window.closeModals = closeModals;
+window.closeQRPayment = closeQRPayment; // Add other modal functions too
+window.toggleBalanceVisibility = toggleBalanceVisibility;
+window.maskDocumento = maskDocumento;
+window.maskCPF = maskCPF;
+window.validatePixKey = validatePixKey;
+window.formatPixKey = formatPixKey;
+window.smartPixMask = smartPixMask;
+window.maskPixKey = maskPixKey;
+window.maskCNPJ = maskCNPJ;
+window.maskCelular = maskCelular;
+window.togglePixInput = togglePixInput;
+window.toggleAdminMode = toggleAdminMode;
+window.registerPixKey = registerPixKey;
+window.openSecurityModal = openSecurityModal;
+window.closeSecurityModal = closeSecurityModal;
+window.finalizePayment = finalizePayment;
+window.maskMoney = maskMoney;
+window.toast = toast;
+window.renderTransactions = renderTransactions;
+window.exibirComprovante = exibirComprovante;
+window.showReceipt = showReceipt;
+window.newTransferFromReceipt = newTransferFromReceipt;
+window.closeReceiptAndGoHome = closeReceiptAndGoHome;
+window.shareReceipt = shareReceipt;
+window.copyReceiptText = copyReceiptText;
+window.fallbackCopy = fallbackCopy;
+window.printReceipt = printReceipt;
+window.updateUI = updateUI;
+window.checkTimeAndApplyTheme = checkTimeAndApplyTheme;
+window.sairComSeguranca = sairComSeguranca;
+window.showNotifications = showNotifications;
+window.showAdminPanel = showAdminPanel;
+window.savePixFee = savePixFee;
+window.deletarMinhaConta = deletarMinhaConta;
+window.saveData = saveData;
+window.updateBalanceAndTransactions = updateBalanceAndTransactions;
+console.log('✅ Todas as funções principais disponíveis globalmente!');
