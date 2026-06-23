@@ -1047,41 +1047,38 @@ function checkTimeAndApplyTheme() {
 
 setInterval(checkTimeAndApplyTheme, 60000);
 
-// Listener direto e simples para os botões (DESATIVADO TEMPORARIAMENTE para teste de conflito de eventos)
+// Listener direto e simples para os botões
 document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ Inicializando sistema de botões...');
 
-    // Botão Entrar (DESATIVADO TEMPORARIAMENTE)
-    // const btnEntrar = document.getElementById('btn-entrar-google');
-    // if (btnEntrar) {
-    //     btnEntrar.onclick = async (e) => {
-    //         e.preventDefault();
-    //         console.log('👆 Botão Entrar clicado. Iniciando verificação...');
-    //         await window.verificarLogin();
-    //     };
-    //     console.log('✅ Listener do botão Entrar configurado');
-    // } else {
-    //     console.error('❌ Botão Entrar não encontrado!');
-    // }
+    // Botão Entrar
+    const btnEntrar = document.getElementById('btn-entrar-google');
+    if (btnEntrar) {
+        btnEntrar.onclick = async (e) => {
+            console.log('👆 Botão Entrar clicado. Iniciando verificação...');
+            await window.verificarLogin();
+        };
+        console.log('✅ Listener do botão Entrar configurado');
+    } else {
+        console.error('❌ Botão Entrar não encontrado!');
+    }
 
-    // Botão Abrir Conta (DESATIVADO TEMPORARIAMENTE)
-    // const btnAbrirConta = document.getElementById('btn-abrir-conta');
-    // if (btnAbrirConta) {
-    //     btnAbrirConta.onclick = async (e) => {
-    //         e.preventDefault();
-    //         console.log('👆 Botão Abrir Conta clicado...');
-    //         await verificarAntesDeCriar();
-    //     };
-    //     console.log('✅ Listener do botão Abrir Conta configurado');
-    // } else {
-    //     console.error('❌ Botão Abrir Conta não encontrado!');
-    // }
+    // Botão Abrir Conta
+    const btnAbrirConta = document.getElementById('btn-abrir-conta');
+    if (btnAbrirConta) {
+        btnAbrirConta.onclick = async (e) => {
+            console.log('👆 Botão Abrir Conta clicado...');
+            await verificarAntesDeCriar();
+        };
+        console.log('✅ Listener do botão Abrir Conta configurado');
+    } else {
+        console.error('❌ Botão Abrir Conta não encontrado!');
+    }
 
     loadUserData();
     checkTimeAndApplyTheme();
     updateUI();
     updateProfitDisplay();
-    initializeNotifications();
     console.log('✅ Sistema inicializado com sucesso!');
 });
 
