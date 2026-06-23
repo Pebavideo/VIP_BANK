@@ -499,39 +499,12 @@ async function verificarLogin() {
         
         
         
-        // 3. Verifica se é o dono do sistema
-        if (user.uid === OWNER_UID) {
-            const userDoc = await VIPBANK.db.collection('usuarios').doc(OWNER_UID).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                VIPBANK.globalUserData = userData;
-                VIPBANK.currentUser = user;
-                VIPBANK.balance = userData.balance || 0;
-                VIPBANK.transactions = userData.transactions || [];
-                entrar();
-                updateUI();
-                updateProfitDisplay();
-                initializeNotifications();
-                // Re-enable button
-                if (loginBtn) {
-                    loginBtn.disabled = false;
-                    loginBtn.style.opacity = '1';
-                    loginBtn.style.pointerEvents = 'auto';
-                    loginBtn.innerText = 'ENTRAR NA MINHA CONTA';
-                }
-                return;
-            }
-        }
-        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
-        if (userDoc.exists) {
-            toast('Identidade VIP detectada! Por favor, confirme sua senha para entrar.', false);
+        if (user) {
+            // Se já tem usuário logado, exibe o modal de confirmação de senha
             document.getElementById('manual-login-id').value = user.email;
             showModal('modal-login-manual');
-        } else {
-            toast('Nenhuma conta VIP encontrada. Cadastre-se primeiro.', 'erro');
-            showCreateAccountForm();
+            return;
         }
-        console.log('Login bem sucedido');
     } catch (error) {
         console.error('❌ Erro na verificação de login:', error);
         console.error('Erro no login:', error);
@@ -564,7 +537,7 @@ async function signInWithGoogle() {
     await verificarLogin();
 }
 
-async function resetPasswordManual() {
+async function handleForgotPassword() {
     const identifier = document.getElementById('manual-login-id').value.trim();
     
     if (!identifier) {
@@ -577,7 +550,9 @@ async function resetPasswordManual() {
     if (emailRegex.test(identifier)) {
         try {
             await VIPBANK.auth.sendPasswordResetEmail(identifier);
-            toast('Link de recuperação enviado!', false);
+            toast('Enviamos um link de redefinição para seu e-mail. Verifique sua caixa de entrada.', false);
+            VIPBANK.auth.signOut(); // Desloga o usuário após enviar o e-mail
+            closeModals();
         } catch (error) {
             toast('Erro ao enviar link. Verifique o e-mail.', 'erro');
         }
@@ -592,21 +567,45 @@ let bankProfit = 0;
 async function entrarComCredenciais() {
     const loginId = document.getElementById('manual-login-id').value.trim();
     const loginPass = document.getElementById('manual-login-pass').value.trim();
-    
-    // Validação de login: confere e-mail do formulário com e-mail do Google logado
-    if (VIPBANK.globalUserData && (loginId === VIPBANK.globalUserData.email || loginId === VIPBANK.globalUserData.cpf)) {
-        if (loginPass === VIPBANK.globalUserData.senha) {
-            toast('Acesso VIP Confirmado!', false);
-            VIPBANK.balance = VIPBANK.globalUserData.balance || 0; // Carrega saldo
-            VIPBANK.transactions = VIPBANK.globalUserData.transactions || []; // Carrega extrato
-            entrar(); // Puxa a cortina preta
+
+    const user = VIPBANK.auth.currentUser;
+    if (!user) {
+        toast('Sessão expirada. Faça login novamente.', 'erro');
+        VIPBANK.auth.signOut();
+        return;
+    }
+
+    try {
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, loginPass);
+        await user.reauthenticateWithCredential(credential);
+
+        // Reautenticação bem-sucedida, agora carrega os dados do usuário
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            VIPBANK.globalUserData = userData;
+            VIPBANK.currentUser = user;
+            VIPBANK.balance = userData.balance || 0;
+            VIPBANK.transactions = userData.transactions || [];
+            entrar();
             updateUI();
+            updateProfitDisplay();
+            initializeNotifications();
+            toast('Acesso VIP Confirmado!', false);
             closeModals();
         } else {
-            toast('Senha incorreta!', 'erro');
+            // Se o documento do usuário não existe após reautenticação, algo está errado ou é um novo usuário
+            toast('Nenhuma conta VIP encontrada. Cadastre-se primeiro.', 'erro');
+            showCreateAccountForm();
         }
-    } else {
-        toast('Dados não conferem com o lojista logado!', 'erro');
+    } catch (error) {
+        console.error('Erro na reautenticação ou carregamento de dados:', error);
+        if (error.code === 'auth/wrong-password') {
+            toast('Senha incorreta. Tente novamente.', 'erro');
+        } else {
+            toast('Erro de segurança. Tente novamente mais tarde.', 'erro');
+        }
+        VIPBANK.auth.signOut(); // Desloga em caso de erro
     }
 }
 
@@ -669,20 +668,9 @@ async function verificarAntesDeCriar() {
         const result = await VIPBANK.auth.signInWithPopup(provider);
         const user = result.user;
         
-        // Procura usuário no Firestore
-        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
-        
-        if (userDoc.exists) {
-            // Se já tem conta: aviso e abre modal de senha
-            toast('Identidade VIP detectada! Por favor, confirme sua senha para entrar.', false);
-            
-            // Preenche e-mail e abre modal de senha
-            document.getElementById('manual-login-id').value = user.email;
-            showModal('modal-login-manual');
-        } else {
-            // Se não tem conta: mostra formulário de cadastro
-            showCreateAccountForm();
-        }
+        // Exibe o modal de confirmação de senha
+        document.getElementById('manual-login-id').value = user.email;
+        showModal('modal-login-manual');
     } catch (error) {
         console.error('Erro na verificação:', error);
         toast('Erro ao verificar conta. Tente novamente.', true);
