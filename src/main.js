@@ -253,14 +253,20 @@ function toggleAdminMode() {
 }
 
 function showModal(id) {
+    console.log('🔍 showModal() chamado com id:', id); // Log de auditoria
     if (id === 'modal-config' && VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem acessar configurações.', 'erro');
         console.error('Tentativa de acesso não autorizado às configurações:', VIPBANK.currentUser.email);
         return;
     }
     
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById(id).style.display = 'block';
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById(id);
+    console.log('🔍 Overlay element:', overlay);
+    console.log('🔍 Modal element:', modal);
+    
+    if (overlay) overlay.style.display = 'block';
+    if (modal) modal.style.display = 'block';
     
     if (id === 'modal-register-pix') {
         const statusDiv = document.getElementById('pix-key-status');
@@ -759,6 +765,7 @@ function updateUI() {
 }
 
 function startQRScanner() {
+    console.log('🔍 startQRScanner() chamado!'); // Log de auditoria
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast('Seu navegador não suporta acesso à câmera', 'erro');
         return;
