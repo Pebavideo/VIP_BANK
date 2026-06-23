@@ -2,17 +2,7 @@
 
 // Todos os acessos são DIRETOS via VIPBANK.nome (sem redeclarações const/let)
 // Exemplo de uso: VIPBANK.db, VIPBANK.auth, VIPBANK.isAdmin
-const regex = VIPBANK.regex;
 
-// Regex com alias
-const AUTH_CPF_REGEX = regex.CPF;
-const AUTH_CNPJ_REGEX = regex.CNPJ;
-const AUTH_EMAIL_REGEX = regex.EMAIL;
-const AUTH_CELULAR_REGEX = regex.CELULAR;
-const AUTH_UUID_REGEX = regex.UUID;
-const AUTH_CPF_RAW_REGEX = regex.CPF_RAW;
-const AUTH_CNPJ_RAW_REGEX = regex.CNPJ_RAW;
-const AUTH_CELULAR_RAW_REGEX = regex.CELULAR_RAW;
 
 async function loadPixFee() {
     try {
@@ -34,21 +24,21 @@ function validatePixKeyAuth(key, type) {
 
     switch (type.toUpperCase()) {
         case 'CPF':
-            if (AUTH_CPF_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CPF.test(cleanKey)) return true;
             const rawCpf = cleanKey.replace(/\D/g, '');
-            return AUTH_CPF_RAW_REGEX.test(rawCpf);
+            return VIPBANK.regex.CPF_RAW.test(rawCpf);
         case 'CNPJ':
-            if (AUTH_CNPJ_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CNPJ.test(cleanKey)) return true;
             const rawCnpj = cleanKey.replace(/\D/g, '');
-            return AUTH_CNPJ_RAW_REGEX.test(rawCnpj);
+            return VIPBANK.regex.CNPJ_RAW.test(rawCnpj);
         case 'EMAIL':
-            return AUTH_EMAIL_REGEX.test(cleanKey);
+            return VIPBANK.regex.EMAIL.test(cleanKey);
         case 'CELULAR':
-            if (AUTH_CELULAR_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CELULAR.test(cleanKey)) return true;
             const rawCelular = cleanKey.replace(/\D/g, '');
-            return AUTH_CELULAR_RAW_REGEX.test(rawCelular);
+            return VIPBANK.regex.CELULAR_RAW.test(rawCelular);
         case 'ALEATORIA':
-            return AUTH_UUID_REGEX.test(cleanKey);
+            return VIPBANK.regex.UUID.test(cleanKey);
         default:
             return false;
     }
@@ -464,6 +454,18 @@ async function saveUserData() {
 async function verificarLogin() {
     console.log('Iniciando verificarLogin...');
 
+    // Loading state: disable btn-entrar-google
+    const loginBtn = document.getElementById('btn-entrar-google');
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.style.opacity = '0.6';
+        loginBtn.style.pointerEvents = 'none';
+        loginBtn.innerText = 'Carregando...';
+    }
+
+    // Wait 1.5 seconds to avoid race condition
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
     const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
     
     try {
@@ -479,7 +481,7 @@ async function verificarLogin() {
             user = result.user;
         }
         
-
+        
         
         // 3. Verifica se é o dono do sistema
         if (user.uid === OWNER_UID) {
@@ -494,6 +496,13 @@ async function verificarLogin() {
                 updateUI();
                 updateProfitDisplay();
                 initializeNotifications();
+                // Re-enable button
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.style.opacity = '1';
+                    loginBtn.style.pointerEvents = 'auto';
+                    loginBtn.innerText = 'ENTRAR NA MINHA CONTA';
+                }
                 return;
             }
         }
@@ -511,6 +520,14 @@ async function verificarLogin() {
         console.error('❌ Erro na verificação de login:', error);
         console.error('Erro no login:', error);
         toast('Erro ao acessar conta. Tente novamente.', 'erro');
+    } finally {
+        // Always re-enable the button, even if there's an error
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.style.opacity = '1';
+            loginBtn.style.pointerEvents = 'auto';
+            loginBtn.innerText = 'ENTRAR NA MINHA CONTA';
+        }
     }
 }
 

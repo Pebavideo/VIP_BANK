@@ -1,12 +1,143 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+
 admin.initializeApp();
 const db = admin.firestore();
 
 // ==========================================
 // CALLABLE CLOUD FUNCTIONS (para front-end)
 // ==========================================
+
+// 8. Gerar cobrança Pix via Asaas (seguro, API key no backend)
+exports.gerarCobrancaPixAsaas = functions.https.onCall(async (data, context) => {
+    // Verificar autenticação
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Usuário não autenticado');
+    }
+
+    const value = data.value;
+    const uid = context.auth.uid;
+    const email = context.auth.token.email;
+
+    if (!value || value <= 0) {
+        throw new functions.https.HttpsError('invalid-argument', 'Valor inválido');
+    }
+
+    try {
+        // 1. Buscar API Key do Asaas no Firestore (admin/configuracoes)
+        const adminDoc = await db.collection('admin').doc('configuracoes').get();
+        const asaasApiKey = adminDoc.exists ? adminDoc.data().asaas_api_key : null;
+
+        if (!asaasApiKey) {
+            throw new functions.https.HttpsError('internal', 'API Key do Asaas não configurada');
+        }
+
+        // 2. Criar cobrança Pix via API Asaas
+        const paymentResponse = await fetch('https://www.asaas.com/api/v3/payments', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'access_token': asaasApiKey
+            },
+            body: JSON.stringify({
+                billingType: 'PIX',
+                value: value,
+                dueDate: new Date().toISOString().split('T')[0],
+                description: `Depósito VIP BANK - ${email}`,
+                customer: uid
+            })
+        });
+
+        if (!paymentResponse.ok) {
+            const errorData = await paymentResponse.json();
+            console.error('Erro na API Asaas:', errorData);
+            throw new functions.https.HttpsError('internal', 'Erro ao gerar cobrança');
+        }
+
+        const paymentData = await paymentResponse.json();
+
+        // 3. Obter QR Code e Pix Copia e Cola
+        const pixResponse = await fetch(`https://www.asaas.com/api/v3/payments/${paymentData.id}/pixQrCode`, {
+            headers: {
+                'accept': 'application/json',
+                'access_token': asaasApiKey
+            }
+        });
+
+        if (!pixResponse.ok) {
+            throw new functions.https.HttpsError('internal', 'Erro ao obter QR Code');
+        }
+
+        const pixData = await pixResponse.json();
+
+        // 4. Gerar authCode único para a transação
+        const authCode = gerarAuthCode();
+        const transactionId = Date.now();
+
+        // 5. Criar transação PENDENTE no Firestore
+        const newTransaction = {
+            id: transactionId,
+            valor: value,
+            dataHora: admin.firestore.FieldValue.serverTimestamp(),
+            tipo: 'ENTRADA',
+            metodo: 'PIX',
+            status: 'PENDENTE',
+            idTransacaoAsaas: paymentData.id,
+            authCode: authCode,
+            remetente: null,
+            destinatario: null,
+            nomeBanco: null,
+            type: 'Depósito Pix',
+            amount: value,
+            dest: 'Depósito em Conta',
+            date: new Date().toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            }),
+            isCredit: true,
+            paymentId: paymentData.id,
+            asaasId: paymentData.id,
+            asaasStatus: paymentData.status,
+            asaasInvoiceUrl: paymentData.invoiceUrl,
+            pixPayload: pixData.payload,
+            pixQrCode: pixData.encodedImage,
+            usuarioId: uid
+        };
+
+        // 6. Validar campos obrigatórios
+        if (!validarTransacaoObrigatoria(newTransaction)) {
+            throw new functions.https.HttpsError('internal', 'Validação de transação falhou');
+        }
+
+        // 7. Salvar transação no Firestore
+        await db.collection('transacoes').doc(transactionId.toString()).set(newTransaction);
+
+        console.log(`✅ Cobrança Pix gerada com sucesso para ${uid} - valor ${value}`);
+
+        // 8. Retornar apenas dados necessários para o front-end
+        return {
+            sucesso: true,
+            pixPayload: pixData.payload,
+            pixQrCode: pixData.encodedImage,
+            transactionId: transactionId,
+            paymentId: paymentData.id,
+            authCode: authCode
+        };
+
+    } catch (error) {
+        console.error('❌ Erro ao gerar cobrança Pix:', error);
+        if (error.code && error.message) {
+            throw error; // Re-throw HttpsError
+        }
+        throw new functions.https.HttpsError('internal', 'Erro ao gerar cobrança');
+    }
+});
 
 // 1. Criar conta de usuário
 exports.criarContaUsuario = functions.https.onCall(async (data, context) => {

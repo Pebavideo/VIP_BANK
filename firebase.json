@@ -1,11 +1,16 @@
 {
   "hosting": {
     "site": "vipbankoficial",
-    "public": ".",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "functions/**",
+      "package.json",
+      "package-lock.json",
+      "README.md",
+      "firestore.rules"
     ],
     "rewrites": [
       {

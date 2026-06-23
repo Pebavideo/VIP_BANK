@@ -2,17 +2,36 @@
 
 // TODOS OS ACESSOS SÃO DIRETOS VIA VIPBANK (sem redeclarações!)
 const ADMIN_EMAIL = VIPBANK.ADMIN_EMAIL;
-const regex = VIPBANK.regex;
 
-// Regex com alias (usando namespace único)
-const CPF_REGEX = regex.CPF;
-const CNPJ_REGEX = regex.CNPJ;
-const EMAIL_REGEX = regex.EMAIL;
-const CELULAR_REGEX = regex.CELULAR;
-const UUID_REGEX = regex.UUID;
-const CPF_RAW_REGEX = regex.CPF_RAW;
-const CNPJ_RAW_REGEX = regex.CNPJ_RAW;
-const CELULAR_RAW_REGEX = regex.CELULAR_RAW;
+// Helper functions for HTML events
+function maskName(input) {
+    input.value = input.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function validateEmail(input) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(input.value)) {
+        toast('E-mail inválido', 'erro');
+        input.style.borderColor = 'var(--danger-color)';
+    } else {
+        input.style.borderColor = '';
+    }
+}
+
+function maskTransactionPassword(input) {
+    input.value = input.value.replace(/\D/g, '');
+}
+
+function handleTransferClick() {
+    const valueInput = document.getElementById('transfer-value');
+    const keyInput = document.getElementById('transfer-key');
+    const value = parseFloat(valueInput.value.replace(/[^\d,]/g, '').replace(',', '.'));
+    const key = keyInput.value.trim();
+    
+    if (window.openSecurityModal) {
+        window.openSecurityModal(value, key);
+    }
+}
 
 function toggleBalanceVisibility() {
     VIPBANK.balanceHidden = !VIPBANK.balanceHidden;
@@ -32,7 +51,11 @@ function toggleBalanceVisibility() {
     // Mostra botão admin apenas para o dono
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) {
-        adminBtn.style.display = (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
+        if (VIPBANK.currentUser && VIPBANK.currentUser.uid === VIPBANK.OWNER_UID) {
+            adminBtn.style.display = 'flex';
+        } else {
+            adminBtn.style.display = 'none';
+        }
     }
 }
 
@@ -100,21 +123,21 @@ function validatePixKey(key, type) {
     switch (type.toUpperCase()) {
         case 'CPF':
             // Valida tanto formatado quanto cru
-            if (CPF_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CPF.test(cleanKey)) return true;
             const rawCpf = cleanKey.replace(/\D/g, '');
-            return CPF_RAW_REGEX.test(rawCpf);
+            return VIPBANK.regex.CPF_RAW.test(rawCpf);
         case 'CNPJ':
-            if (CNPJ_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CNPJ.test(cleanKey)) return true;
             const rawCnpj = cleanKey.replace(/\D/g, '');
-            return CNPJ_RAW_REGEX.test(rawCnpj);
+            return VIPBANK.regex.CNPJ_RAW.test(rawCnpj);
         case 'EMAIL':
-            return EMAIL_REGEX.test(cleanKey);
+            return VIPBANK.regex.EMAIL.test(cleanKey);
         case 'CELULAR':
-            if (CELULAR_REGEX.test(cleanKey)) return true;
+            if (VIPBANK.regex.CELULAR.test(cleanKey)) return true;
             const rawCelular = cleanKey.replace(/\D/g, '');
-            return CELULAR_RAW_REGEX.test(rawCelular);
+            return VIPBANK.regex.CELULAR_RAW.test(rawCelular);
         case 'ALEATORIA':
-            return UUID_REGEX.test(cleanKey);
+            return VIPBANK.regex.UUID.test(cleanKey);
         default:
             return false;
     }
@@ -153,9 +176,9 @@ function smartPixMask(input) {
     let type = null;
     
     // Tenta detectar o tipo automaticamente
-    if (UUID_REGEX.test(key)) {
+    if (VIPBANK.regex.UUID.test(key)) {
         type = 'ALEATORIA';
-    } else if (EMAIL_REGEX.test(key)) {
+    } else if (VIPBANK.regex.EMAIL.test(key)) {
         type = 'EMAIL';
     } else {
         const clean = key.replace(/\D/g, '');
@@ -238,6 +261,8 @@ function togglePixInput() {
         if (type === 'CELULAR') input.value = document.getElementById('celular-field').value;
     }
 }
+
+window.togglePixInput = togglePixInput;
 
 function toggleAdminMode() {
     // Removido: acesso por clique múltiplo
@@ -1326,6 +1351,10 @@ window.checkTimeAndApplyTheme = checkTimeAndApplyTheme;
 window.sairComSeguranca = sairComSeguranca;
 window.showNotifications = showNotifications;
 window.showAdminPanel = showAdminPanel;
+window.maskName = maskName;
+window.validateEmail = validateEmail;
+window.maskTransactionPassword = maskTransactionPassword;
+window.handleTransferClick = handleTransferClick;
 window.savePixFee = savePixFee;
 window.deletarMinhaConta = deletarMinhaConta;
 window.saveData = saveData;

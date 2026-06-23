@@ -13,108 +13,39 @@ async function gerarCobrancaPix() {
         return;
     }
 
-    // Obter a API key do Asaas (primeiro tenta do admin, pois deve ser uma chave de produção/sanVIPBANK.dbox)
-    let asaasApiKey;
-    try {
-        const adminDoc = await VIPBANK.db.collection('admin').doc('configuracoes').get();
-        if (adminDoc.exists && adminDoc.data().asaas_api_key) {
-            asaasApiKey = adminDoc.data().asaas_api_key;
-        }
-    } catch (e) {
-        console.error('Erro ao buscar API key:', e);
-    }
-
-    if (!asaasApiKey) {
-        toast('API Key do Asaas não configurada!', 'erro');
-        return;
-    }
-
     const btnGerar = document.getElementById('btn-gerar-pix');
     btnGerar.disabled = true;
     btnGerar.innerText = 'GERANDO...';
 
     try {
-        // Requisição para API do Asaas para gerar cobrança Pix
-        const response = await fetch('https://www.asaas.com/api/v3/payments', {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'content-type': 'application/json',
-                'access_token': asaasApiKey
-            },
-            body: JSON.stringify({
-                billingType: 'PIX',
-                value: value,
-                dueDate: new Date().toISOString().split('T')[0],
-                description: `Depósito VIP BANK - ${VIPBANK.currentUser.email}`,
-                customer: VIPBANK.currentUser.uid // opcional: se você pode criar clientes no Asaas
-            })
-        });
+        // Chamar Cloud Function segura
+        const gerarCobranca = VIPBANK.functions.httpsCallable('gerarCobrancaPixAsaas');
+        const response = await gerarCobranca({ value: value });
+        const result = response.data;
 
-        if (!response.ok) {
+        if (!result.sucesso) {
             throw new Error('Erro ao gerar cobrança');
         }
 
-        const data = await response.json();
+        pixCopiaCola = result.pixPayload;
 
-        // Obter o QR Code e Pix Copia e Cola
-        const pixResponse = await fetch(`https://www.asaas.com/api/v3/payments/${data.id}/pixQrCode`, {
-            headers: {
-                'accept': 'application/json',
-                'access_token': asaasApiKey
-            }
-        });
-
-        if (!pixResponse.ok) {
-            throw new Error('Erro ao obter QR Code');
-        }
-
-        const pixData = await pixResponse.json();
-        pixCopiaCola = pixData.payload;
-
-        // Gerar authCode único
-        const authCode = gerarAuthCode();
-        const transactionId = Date.now();
-
-        // Criar registro de transação PENDENTE no Firestore com campos obrigatórios
+        // Adicionar transação à lista local
         const newTransaction = {
-            id: transactionId,
+            id: result.transactionId,
             valor: value,
-            dataHora: firebase.firestore.FieldValue.serverTimestamp(),
+            dataHora: new Date(), // Será atualizado pelo Firestore
             tipo: 'ENTRADA',
             metodo: 'PIX',
             status: 'PENDENTE',
-            idTransacaoAsaas: data.id,
-            authCode: authCode,
-            remetente: null, // Será preenchido via Webhook Asaas
-            destinatario: null,
-            nomeBanco: null,
-            // Campos complementares (mantidos para compatibilidade)
-            type: 'Depósito Pix',
-            amount: value,
-            dest: 'Depósito em Conta',
-            date: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            isCredit: true,
-            paymentId: data.id,
-            asaasId: data.id,
-            asaasStatus: data.status,
-            asaasInvoiceUrl: data.invoiceUrl,
-            pixPayload: pixData.payload,
-            pixQrCode: pixData.encodedImage,
+            idTransacaoAsaas: result.paymentId,
+            authCode: result.authCode,
+            paymentId: result.paymentId,
+            pixPayload: result.pixPayload,
+            pixQrCode: result.pixQrCode,
             usuarioId: VIPBANK.currentUser.uid
         };
 
-        // Validar campos obrigatórios
-        if (!validarTransacaoObrigatoria(newTransaction)) {
-            throw new Error('Validação de transação falhou');
-        }
-
         VIPBANK.transactions.unshift(newTransaction);
-
-        // Salvar transação via Cloud Function
-        const criarTransacao = VIPBANK.functions.httpsCallable('criarTransacao');
-        await criarTransacao({ transacao: newTransaction });
-
         await saveUserData();
 
         // Exibir passo 2 do modal
