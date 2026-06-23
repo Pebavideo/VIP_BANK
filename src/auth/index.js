@@ -2,7 +2,6 @@
 
 // Todos os acessos são DIRETOS via VIPBANK.nome (sem redeclarações const/let)
 // Exemplo de uso: VIPBANK.db, VIPBANK.auth, VIPBANK.isAdmin
-const ADMIN_EMAIL = VIPBANK.ADMIN_EMAIL;
 const regex = VIPBANK.regex;
 
 // Regex com alias
@@ -175,7 +174,7 @@ function validarTransacaoObrigatoria(transacao) {
 
 // Função para verificar se é admin
 VIPBANK.isAdmin = function() {
-    return VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL;
+    return VIPBANK.currentUser && VIPBANK.currentUser.email === VIPBANK.ADMIN_EMAIL;
 }
 
 // Função para abrir painel admin e carregar dados
@@ -360,7 +359,7 @@ async function loadUserData() {
                         // Mostra botão admin apenas para o dono (verificação explícita do e-mail)
                         const adminBtn = document.getElementById('admin-btn');
                         if (adminBtn) {
-                            adminBtn.style.display = (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
+                            adminBtn.style.display = (VIPBANK.currentUser && VIPBANK.currentUser.email === VIPBANK.ADMIN_EMAIL) ? 'flex' : 'none';
                         }
                     }, 3000);
                     
