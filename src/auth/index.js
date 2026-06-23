@@ -554,18 +554,42 @@ async function verificarLogin() {
     }
 }
 
-// Vincula a função ao window para acesso global
+// Vincula funções ao window para acesso global
 window.verificarLogin = verificarLogin;
-
 window.iniciarLogin = async function() { 
     console.log('Login iniciado via clique direto'); 
     await verificarLogin(); 
 };
-
 window.abrirConta = async function() {
     console.log('Abrir conta iniciado via clique direto');
     await verificarAntesDeCriar();
 };
+window.signInWithGoogle = signInWithGoogle;
+window.resetPasswordManual = resetPasswordManual;
+window.entrarComCredenciais = entrarComCredenciais;
+window.entrar = entrar;
+window.sairComSeguranca = sairComSeguranca;
+window.showCreateAccountForm = showCreateAccountForm;
+window.verificarAntesDeCriar = verificarAntesDeCriar;
+window.backToLogin = backToLogin;
+window.handleRegistration = handleRegistration;
+window.finalizeAccount = finalizeAccount;
+window.togglePixInput = togglePixInput;
+window.loadUserData = loadUserData;
+window.saveUserData = saveUserData;
+window.gerarAuthCode = gerarAuthCode;
+window.validarTransacaoObrigatoria = validarTransacaoObrigatoria;
+window.loadAdminData = loadAdminData;
+window.calcularSaldoAtualizado = calcularSaldoAtualizado;
+window.auditarPrecisaoSaldo = auditarPrecisaoSaldo;
+window.testeZeCar = testeZeCar;
+window.deletarMinhaConta = deletarMinhaConta;
+window.verificarSenhaEncerramento = verificarSenhaEncerramento;
+window.encerrarContaVIP = encerrarContaVIP;
+window.loadPixFee = loadPixFee;
+window.validatePixKeyAuth = validatePixKeyAuth;
+window.formatPixKeyAuth = formatPixKeyAuth;
+console.log('✅ Todas as funções de auth/index.js disponíveis globalmente!');
 
 // Função de login com Google (mantida para compatibilidade)
 async function signInWithGoogle() {
