@@ -1,11 +1,12 @@
-// Arquivo migrado para usar VIPBANK namespace central!
-console.log('✅ src/auth/index.js carregado');
+// Arquivo migrado para usar VIPBANK namespace EXCLUSIVO! Nenhuma declaração duplicada!
+console.log('✅ src/VIPBANK.auth/index.js carregado');
 
-// Aliases para o namespace VIPBANK (para não mudar todo o código de uma vez)
-const { db, auth, functions, ADMIN_EMAIL, regex } = VIPBANK;
-let { ASAAS_PIX_FEE, currentUser, balance, apiKey, transactions, userPassword, userTransPassword, userCPF, userPixKey, pendingTransfer, balanceHidden, globalUserData, qrScanner, qrPaymentData, adminClickCount, isAdmin, unreadTransactions } = VIPBANK;
+// Todos os acessos são DIRETOS via VIPBANK.nome (sem redeclarações const/let)
+// Exemplo de uso: VIPBANK.db, VIPBANK.auth, VIPBANK.isAdmin
+const ADMIN_EMAIL = VIPBANK.ADMIN_EMAIL;
+const regex = VIPBANK.regex;
 
-// Regex com alias (usando o namespace)
+// Regex com alias
 const AUTH_CPF_REGEX = regex.CPF;
 const AUTH_CNPJ_REGEX = regex.CNPJ;
 const AUTH_EMAIL_REGEX = regex.EMAIL;
@@ -17,17 +18,14 @@ const AUTH_CELULAR_RAW_REGEX = regex.CELULAR_RAW;
 
 async function loadPixFee() {
     try {
-        const adminDoc = await db.collection('admin').doc('configuracoes').get();
+        const adminDoc = await VIPBANK.db.collection('admin').doc('configuracoes').get();
         if (adminDoc.exists && adminDoc.data().valor_taxa_pix) {
-            ASAAS_PIX_FEE = adminDoc.data().valor_taxa_pix;
-            VIPBANK.ASAAS_PIX_FEE = ASAAS_PIX_FEE; // Atualiza namespace
+            VIPBANK.ASAAS_PIX_FEE = adminDoc.data().valor_taxa_pix;
         } else {
-            ASAAS_PIX_FEE = 3.99;
             VIPBANK.ASAAS_PIX_FEE = 3.99;
         }
     } catch (error) {
         console.error('Erro ao carregar taxa Pix:', error);
-        ASAAS_PIX_FEE = 3.99;
         VIPBANK.ASAAS_PIX_FEE = 3.99;
     }
 }
@@ -89,8 +87,8 @@ function formatPixKeyAuth(key, type) {
 let tempAccountDeletePassword = null;
 
 function deletarMinhaConta() {
-    // First check balance
-    if (balance > 0) {
+    // First check VIPBANK.balance
+    if (VIPBANK.balance > 0) {
         toast('Você ainda possui saldo. Realize um saque antes de encerrar sua conta.', 'erro');
         return;
     }
@@ -105,8 +103,8 @@ function verificarSenhaEncerramento() {
         toast('Digite sua senha para continuar.', 'erro');
         return;
     }
-    // Check if password matches userPassword from global state
-    if (passwordInput !== userPassword) {
+    // Check if password matches VIPBANK.userPassword from global state
+    if (passwordInput !== VIPBANK.userPassword) {
         toast('Senha incorreta. Tente novamente.', 'erro');
         return;
     }
@@ -120,15 +118,15 @@ function verificarSenhaEncerramento() {
 
 async function encerrarContaVIP() {
     try {
-        // Step 1: Re-authenticate user (if using email login)
-        const user = auth.currentUser;
+        // Step 1: Re-VIPBANK.authenticate user (if using email login)
+        const user = VIPBANK.auth.currentUser;
         if (!user) {
             toast('Usuário não autenticado.', 'erro');
             return;
         }
 
         // Step 2: Delete via Cloud Function
-        const deletarConta = functions.httpsCallable('deletarContaUsuario');
+        const deletarConta = VIPBANK.functions.httpsCallable('deletarContaUsuario');
         await deletarConta();
 
         // Step 3: Clear local storage
@@ -146,7 +144,7 @@ async function encerrarContaVIP() {
     }
 }
 
-// Função para gerar authCode único para comprovantes
+// Função para gerar VIPBANK.authCode único para comprovantes
 function gerarAuthCode() {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 10);
@@ -157,7 +155,7 @@ function gerarAuthCode() {
 function validarTransacaoObrigatoria(transacao) {
     const camposObrigatorios = [
         'valor', 'dataHora', 'tipo', 'metodo', 
-        'status', 'authCode', 'idTransacaoAsaas',
+        'status', 'VIPBANK.authCode', 'idTransacaoAsaas',
         'usuarioId', 'id'
     ];
     
@@ -177,13 +175,13 @@ function validarTransacaoObrigatoria(transacao) {
 }
 
 // Função para verificar se é admin
-function isAdmin() {
-    return currentUser && currentUser.email === ADMIN_EMAIL;
+VIPBANK.isAdmin = function() {
+    return VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL;
 }
 
 // Função para abrir painel admin e carregar dados
 async function showAdminPanel() {
-    if (!isAdmin()) {
+    if (!VIPBANK.isAdmin()) {
         toast('Acesso negado!', 'erro');
         return;
     }
@@ -195,7 +193,7 @@ async function showAdminPanel() {
 async function calcularSaldoAtualizado(usuarioId) {
     try {
         // Obter todas as transações confirmadas do usuário
-        const snapshot = await db.collection('transacoes')
+        const snapshot = await VIPBANK.db.collection('transacoes')
             .where('usuarioId', '==', usuarioId)
             .where('status', '==', 'CONFIRMADO')
             .get();
@@ -227,11 +225,11 @@ async function calcularSaldoAtualizado(usuarioId) {
 
 // Função para auditar precisão do saldo
 async function auditarPrecisaoSaldo() {
-    if (!currentUser) return;
+    if (!VIPBANK.currentUser) return;
     
     try {
-        const saldoCalculado = await calcularSaldoAtualizado(currentUser.uid);
-        const userDoc = await db.collection('usuarios').doc(currentUser.uid).get();
+        const saldoCalculado = await calcularSaldoAtualizado(VIPBANK.currentUser.uid);
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(VIPBANK.currentUser.uid).get();
         
         if (!userDoc.exists || saldoCalculado === null) {
             return;
@@ -248,7 +246,7 @@ async function auditarPrecisaoSaldo() {
             console.error(`Saldo Calculado: R$ ${saldoCalculado.toFixed(2)}, Saldo Salvo: R$ ${saldoSalvo.toFixed(2)}`);
             
             // Registrar erro na coleção logs_erro via Cloud Function
-            const registrarLog = functions.httpsCallable('registrarLogErro');
+            const registrarLog = VIPBANK.functions.httpsCallable('registrarLogErro');
             await registrarLog({
                 log: {
                     tipo: 'precisao_saldo',
@@ -310,7 +308,7 @@ setTimeout(() => {
 async function loadAdminData() {
     try {
         // Carregar todos os usuários
-        const usersSnapshot = await db.collection('usuarios').get();
+        const usersSnapshot = await VIPBANK.db.collection('usuarios').get();
         const users = usersSnapshot.docs.map(doc => doc.data());
         
         // Atualizar contador de usuários
@@ -358,65 +356,65 @@ async function loadAdminData() {
 
 // Carrega dados do usuário logado
 async function loadUserData() {
-    auth.onAuthStateChanged(async (user) => {
+    VIPBANK.auth.onAuthStateChanged(async (user) => {
         const loginButtons = document.getElementById('login-buttons');
         const createForm = document.getElementById('create-account-form');
         
         if (user) {
-            currentUser = user;
+            VIPBANK.currentUser = user;
             
             // Carrega taxa Pix dinâmica do Firestore
             await loadPixFee();
             
             try {
                 // Primeiro, carrega transações do usuário
-                const transacoesSnapshot = await db.collection('transacoes')
+                const transacoesSnapshot = await VIPBANK.db.collection('transacoes')
                     .where('usuarioId', '==', user.uid)
                     .orderBy('createdAt', 'desc')
                     .get();
                 
                 // Carrega dados do usuário
-                const userDoc = await db.collection('usuarios').doc(user.uid).get();
+                const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    globalUserData = userData; // Salva dados na variável global
+                    VIPBANK.globalUserData = userData; // Salva dados na variável global
                     
                     // Carrega saldo diretamente do Firestore (apenas servidor pode alterar!)
-                    balance = userData.balance || 0;
+            VIPBANK.balance = userData.balance || 0;
+            
+            // Carrega transações do Firestore (coleção separada)
+            VIPBANK.transactions = [];
+            transacoesSnapshot.forEach(doc => {
+                VIPBANK.transactions.push(doc.data());
+            });
                     
-                    // Carrega transações do Firestore (coleção separada)
-                    transactions = [];
-                    transacoesSnapshot.forEach(doc => {
-                        transactions.push(doc.data());
-                    });
-                    
-                    userPassword = userData.senha || '';
-                    userTransPassword = userData.senha_transacional || '';
-                    userCPF = userData.cpf || '';
-                    userPixKey = userData.chave_ativa || '';
-                    apiKey = userData.apiKey || '';
+                    VIPBANK.userPassword = userData.senha || '';
+                    VIPBANK.userTransPassword = userData.senha_transacional || '';
+                    VIPBANK.userCPF = userData.cpf || '';
+                    VIPBANK.userPixKey = userData.chave_ativa || '';
+                    VIPBANK.apiKey = userData.VIPBANK.apiKey || '';
                     
                     // Timer de 3 segundos para estabilizar sessão antes de verificar admin
                     setTimeout(() => {
                         // Mostra botão admin apenas para o dono (verificação explícita do e-mail)
                         const adminBtn = document.getElementById('admin-btn');
                         if (adminBtn) {
-                            adminBtn.style.display = (currentUser && currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
+                            adminBtn.style.display = (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
                         }
                     }, 3000);
                     
                     // Listener para monitorar mudanças no documento do usuário (incluindo saldo)
-                    db.collection('usuarios').doc(user.uid).onSnapshot(doc => {
+                    VIPBANK.db.collection('usuarios').doc(user.uid).onSnapshot(doc => {
                         if (doc.exists) {
                             const updatedData = doc.data();
-                            balance = updatedData.balance || 0;
-                            globalUserData = updatedData;
+                            VIPBANK.balance = updatedData.balance || 0;
+                            VIPBANK.globalUserData = updatedData;
                             updateUI();
                         }
                     });
                     
                     // Listener para monitorar novas transações e confirmações
-                    db.collection('transacoes')
+                    VIPBANK.db.collection('transacoes')
                         .where('usuarioId', '==', user.uid)
                         .onSnapshot(snapshot => {
                             snapshot.docChanges().forEach(change => {
@@ -425,11 +423,11 @@ async function loadUserData() {
                                 if (change.type === 'added' || change.type === 'modified') {
                                     if (data.status === 'CONFIRMADO') {
                                         // Atualizar a transação na lista local
-                                        const transIndex = transactions.findIndex(t => t.id === data.id);
+                                        const transIndex = VIPBANK.transactions.findIndex(t => t.id === data.id);
                                         if (transIndex !== -1) {
-                                            transactions[transIndex] = data;
+                                            VIPBANK.transactions[transIndex] = data;
                                         } else {
-                                            transactions.unshift(data);
+                                            VIPBANK.transactions.unshift(data);
                                         }
                                         updateUI();
                                         initializeNotifications();
@@ -483,13 +481,13 @@ async function loadUserData() {
 
 // Salva dados do usuário no Firestore via Cloud Function
 async function saveUserData() {
-    if (!currentUser) return;
+    if (!VIPBANK.currentUser) return;
     
     try {
-        const atualizarUsuario = functions.httpsCallable('atualizarUsuario');
+        const atualizarUsuario = VIPBANK.functions.httpsCallable('atualizarUsuario');
         await atualizarUsuario({
             dados: {
-                apiKey: apiKey,
+                apiKey: VIPBANK.apiKey,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }
         });
@@ -513,7 +511,7 @@ async function verificarLogin() {
             console.log('⚠️ Nenhum usuário logado. Abrindo popup do Google...');
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
-            const result = await auth.signInWithPopup(provider);
+            const result = await VIPBANK.auth.signInWithPopup(provider);
             user = result.user;
         }
         
@@ -522,13 +520,13 @@ async function verificarLogin() {
         // 3. Verifica se é o dono do sistema
         if (user.uid === OWNER_UID) {
             console.log('👑 Dono detectado! Logando direto...');
-            const userDoc = await db.collection('usuarios').doc(OWNER_UID).get();
+            const userDoc = await VIPBANK.db.collection('usuarios').doc(OWNER_UID).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
-                globalUserData = userData;
-                currentUser = user;
-                balance = userData.balance || 0;
-                transactions = userData.transactions || [];
+                VIPBANK.globalUserData = userData;
+                VIPBANK.currentUser = user;
+                VIPBANK.balance = userData.balance || 0;
+                VIPBANK.transactions = userData.transactions || [];
                 entrar();
                 updateUI();
                 updateProfitDisplay();
@@ -540,7 +538,7 @@ async function verificarLogin() {
         
         // 4. Se não é o dono, continua com o fluxo normal
         console.log('📝 Verificando conta no Firestore...');
-        const userDoc = await db.collection('usuarios').doc(user.uid).get();
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
         if (userDoc.exists) {
             toast('Identidade VIP detectada! Por favor, confirme sua senha para entrar.', false);
             document.getElementById('manual-login-id').value = user.email;
@@ -587,7 +585,7 @@ async function resetPasswordManual() {
     
     if (emailRegex.test(identifier)) {
         try {
-            await auth.sendPasswordResetEmail(identifier);
+            await VIPBANK.auth.sendPasswordResetEmail(identifier);
             toast('Link de recuperação enviado!', false);
         } catch (error) {
             toast('Erro ao enviar link. Verifique o e-mail.', 'erro');
@@ -605,11 +603,11 @@ async function entrarComCredenciais() {
     const loginPass = document.getElementById('manual-login-pass').value.trim();
     
     // Validação de login: confere e-mail do formulário com e-mail do Google logado
-    if (globalUserData && (loginId === globalUserData.email || loginId === globalUserData.cpf)) {
-        if (loginPass === globalUserData.senha) {
+    if (VIPBANK.globalUserData && (loginId === VIPBANK.globalUserData.email || loginId === VIPBANK.globalUserData.cpf)) {
+        if (loginPass === VIPBANK.globalUserData.senha) {
             toast('Acesso VIP Confirmado!', false);
-            balance = globalUserData.balance || 0; // Carrega saldo
-            transactions = globalUserData.transactions || []; // Carrega extrato
+            VIPBANK.balance = VIPBANK.globalUserData.balance || 0; // Carrega saldo
+            VIPBANK.transactions = VIPBANK.globalUserData.transactions || []; // Carrega extrato
             entrar(); // Puxa a cortina preta
             updateUI();
             closeModals();
@@ -628,32 +626,32 @@ function entrar() {
 
 function sairComSeguranca() {
     // 1. Limpa variáveis sensíveis da memória imediatamente
-    balance = 0;
-    transactions = [];
-    currentUser = null;
-    userPassword = '';
-    userTransPassword = '';
-    userCPF = '';
-    userPixKey = '';
-    isAdmin = false;
-    adminClickCount = 0;
-    balanceHidden = false;
-    apiKey = '';
-    pendingTransfer = null;
-    globalUserData = null; // Limpa dados globais
+    VIPBANK.balance = 0;
+    VIPBANK.transactions = [];
+    VIPBANK.currentUser = null;
+    VIPBANK.userPassword = '';
+    VIPBANK.userTransPassword = '';
+    VIPBANK.userCPF = '';
+    VIPBANK.userPixKey = '';
+    VIPBANK.isAdmin = false;
+    VIPBANK.adminClickCount = 0;
+    VIPBANK.balanceHidden = false;
+    VIPBANK.apiKey = '';
+    VIPBANK.pendingTransfer = null;
+    VIPBANK.globalUserData = null; // Limpa dados globais
 
     // 2. Limpa conteúdo HTML de listas de transações
     const transList = document.getElementById('trans-list');
-    const fullTransList = document.getElementById('full-transactions-list');
+    const fullTransList = document.getElementById('full-VIPBANK.transactions-list');
     if (transList) transList.innerHTML = '';
     if (fullTransList) fullTransList.innerHTML = '';
 
     // 3. Atualiza o texto da UI para saldo zerado
-    const balanceDisplay = document.getElementById('balance-display');
+    const balanceDisplay = document.getElementById('txt-saldo');
     if (balanceDisplay) balanceDisplay.innerText = 'R$ 0,00';
 
     // 4. Encerra sessão no Firebase, oculta dashboard e mostra login
-    auth.signOut().then(() => {
+    VIPBANK.auth.signOut().then(() => {
         document.getElementById('main-content').style.display = 'none';
         document.getElementById('login-screen').style.display = 'flex';
         
@@ -677,11 +675,11 @@ async function verificarAntesDeCriar() {
         // Abre popup do Google Login
         console.log('Iniciando popup...');
         const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
+        const result = await VIPBANK.auth.signInWithPopup(provider);
         const user = result.user;
         
         // Procura usuário no Firestore
-        const userDoc = await db.collection('usuarios').doc(user.uid).get();
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
         
         if (userDoc.exists) {
             // Se já tem conta: aviso e abre modal de senha
@@ -727,11 +725,11 @@ async function handleRegistration() {
         
         // 1. Cria o ID primeiro
         const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
+        const result = await VIPBANK.auth.signInWithPopup(provider);
         const user = result.user;
         
         // 2. Verifica se uid já existe antes de salvar
-        const userDoc = await db.collection('usuarios').doc(user.uid).get();
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
         if (userDoc.exists) {
             // Se já existe, redireciona para login manual com senha
             toast('Você já possui uma conta VIP vinculada a este e-mail.', false);
@@ -847,13 +845,13 @@ async function finalizeAccount(uid) {
         console.log('📤 Enviando dados para Cloud Function:', dadosUsuario);
         
         // GRAVAÇÃO VIA CLOUD FUNCTION
-        const criarConta = functions.httpsCallable('criarContaUsuario');
+        const criarConta = VIPBANK.functions.httpsCallable('criarContaUsuario');
         await criarConta({ dadosUsuario });
         
         // DELAY DE GRAVAÇÃO: Aguarda Firestore estabilizar
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        userPixKey = pixFormatado;
+        VIPBANK.userPixKey = pixFormatado;
         localStorage.setItem('VIP_REGISTERED', 'true');
         toast('Conta VIP Ativada!', false);
         

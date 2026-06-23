@@ -1,16 +1,11 @@
 alert('Script carregado');
 console.log('✅ src/main.js carregado');
 
-// Aliases para VIPBANK namespace (todas as variáveis globais)
-const { db, functions, ADMIN_EMAIL, regex } = VIPBANK;
-let { 
-    currentUser, balance, transactions, isAdmin, globalUserData, 
-    balanceHidden, apiKey, pendingTransfer, qrScanner, 
-    userPixKey, userTransPassword, userPassword, unreadTransactions,
-    ASAAS_PIX_FEE, qrPaymentData, adminClickCount, userCPF
-} = VIPBANK;
+// TODOS OS ACESSOS SÃO DIRETOS VIA VIPBANK (sem redeclarações!)
+const ADMIN_EMAIL = VIPBANK.ADMIN_EMAIL;
+const regex = VIPBANK.regex;
 
-// Regex com alias (usando o namespace único)
+// Regex com alias (usando namespace único)
 const CPF_REGEX = regex.CPF;
 const CNPJ_REGEX = regex.CNPJ;
 const EMAIL_REGEX = regex.EMAIL;
@@ -21,16 +16,16 @@ const CNPJ_RAW_REGEX = regex.CNPJ_RAW;
 const CELULAR_RAW_REGEX = regex.CELULAR_RAW;
 
 function toggleBalanceVisibility() {
-    balanceHidden = !balanceHidden;
+    VIPBANK.balanceHidden = !VIPBANK.balanceHidden;
     const eyeIcon = document.getElementById('balance-eye');
     const balanceText = document.getElementById('txt-saldo');
     
-    if (balanceHidden) {
+    if (VIPBANK.balanceHidden) {
         eyeIcon.className = 'fas fa-eye-slash';
         balanceText.innerText = '•••';
     } else {
         eyeIcon.className = 'fas fa-eye';
-        balanceText.innerText = balance.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        balanceText.innerText = VIPBANK.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
     
     renderTransactions();
@@ -38,7 +33,7 @@ function toggleBalanceVisibility() {
     // Mostra botão admin apenas para o dono
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) {
-        adminBtn.style.display = (currentUser && currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
+        adminBtn.style.display = (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) ? 'flex' : 'none';
     }
 }
 
@@ -248,19 +243,19 @@ function togglePixInput() {
 function toggleAdminMode() {
     // Removido: acesso por clique múltiplo
     // Apenas o ADMIN_EMAIL pode acessar funções admin
-    if (currentUser && currentUser.email === ADMIN_EMAIL) {
-        isAdmin = true;
+    if (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
+        VIPBANK.isAdmin = true;
         toast('Acesso administrativo confirmado!', 'sucesso');
     } else {
         toast('Acesso administrativo negado!', 'erro');
-        isAdmin = false;
+        VIPBANK.isAdmin = false;
     }
 }
 
 function showModal(id) {
-    if (id === 'modal-config' && currentUser && currentUser.email !== ADMIN_EMAIL) {
+    if (id === 'modal-config' && VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem acessar configurações.', 'erro');
-        console.error('Tentativa de acesso não autorizado às configurações:', currentUser.email);
+        console.error('Tentativa de acesso não autorizado às configurações:', VIPBANK.currentUser.email);
         return;
     }
     
@@ -272,10 +267,10 @@ function showModal(id) {
         const display = document.getElementById('active-pix-key-display');
         const keyInput = document.getElementById('new-pix-key');
         
-        if (userPixKey) {
+        if (VIPBANK.userPixKey) {
             statusDiv.style.display = 'block';
-            display.innerText = userPixKey;
-            keyInput.value = userPixKey; // Mostra chave atual no campo
+            display.innerText = VIPBANK.userPixKey;
+            keyInput.value = VIPBANK.userPixKey; // Mostra chave atual no campo
         } else {
             statusDiv.style.display = 'none';
             keyInput.value = '';
@@ -312,7 +307,7 @@ function closeModals() {
         if (el) el.value = '';
     });
     
-    pendingTransfer = null;
+    VIPBANK.pendingTransfer = null;
 }
 
 async function registerPixKey() {
@@ -323,7 +318,7 @@ async function registerPixKey() {
     const btn = document.getElementById('btn-save-pix-key');
 
     if (!novaChave) { toast('Digite a nova chave!', 'erro'); return; }
-    if (!currentUser) { toast('Sessão expirada. Relogue.', 'erro'); return; }
+    if (!VIPBANK.currentUser) { toast('Sessão expirada. Relogue.', 'erro'); return; }
 
     // Validação de chave PIX
     if (!validatePixKey(novaChave, novoTipo)) {
@@ -349,7 +344,7 @@ async function registerPixKey() {
         // Formata a chave antes de salvar
         const chaveFormatada = formatPixKey(novaChave, novoTipo);
         // Atualiza via Cloud Function
-        const atualizarUsuario = functions.httpsCallable('atualizarUsuario');
+        const atualizarUsuario = VIPBANK.functions.httpsCallable('atualizarUsuario');
         await atualizarUsuario({
             dados: {
                 chave_ativa: chaveFormatada,
@@ -357,7 +352,7 @@ async function registerPixKey() {
             }
         });
         
-        userPixKey = chaveFormatada; // Atualiza na memória com a chave formatada
+        VIPBANK.userPixKey = chaveFormatada; // Atualiza na memória com a chave formatada
         toast('Chave PIX atualizada com sucesso!', false);
         closeModals();
         updateUI();
@@ -376,7 +371,7 @@ function openSecurityModal(valor, chave) {
         return;
     }
     
-    if(valor > balance) {
+    if(valor > VIPBANK.balance) {
         toast('Saldo insuficiente!', 'erro');
         return;
     }
@@ -407,7 +402,7 @@ function openSecurityModal(valor, chave) {
     }
     
     const dynamicFee = calculatePixFee();
-    pendingTransfer = { valor, chave: chaveParaProcessar, data, descricao, fee: dynamicFee };
+    VIPBANK.pendingTransfer = { valor, chave: chaveParaProcessar, data, descricao, fee: dynamicFee };
     
     document.getElementById('modal-transfer-pix').style.display = 'none';
     document.getElementById('modal-security').style.display = 'block';
@@ -423,7 +418,7 @@ function openSecurityModal(valor, chave) {
 function closeSecurityModal() {
     document.getElementById('modal-security').style.display = 'none';
     document.getElementById('security-password').value = '';
-    pendingTransfer = null;
+    VIPBANK.pendingTransfer = null;
 }
 
 async function finalizePayment() {
@@ -431,21 +426,21 @@ async function finalizePayment() {
     const btn = document.getElementById('btn-finalize-payment');
     
     // Verificação Final: Senha Transacional e Saldo
-    if (passwordInput !== userTransPassword) {
+    if (passwordInput !== VIPBANK.userTransPassword) {
         toast('Senha Transacional Inválida!', 'erro');
         document.getElementById('security-password').value = '';
         document.getElementById('security-password').focus();
         return;
     }
     
-    if (!pendingTransfer) {
+    if (!VIPBANK.pendingTransfer) {
         toast('Erro na transferência. Tente novamente.', 'erro');
         closeSecurityModal();
         return;
     }
 
-    const totalAmountToDeduct = pendingTransfer.valor + (pendingTransfer.fee || 0);
-    if (balance < totalAmountToDeduct) {
+    const totalAmountToDeduct = VIPBANK.pendingTransfer.valor + (VIPBANK.pendingTransfer.fee || 0);
+    if (VIPBANK.balance < totalAmountToDeduct) {
         toast('Saldo insuficiente!', 'erro');
         closeSecurityModal();
         return;
@@ -457,9 +452,9 @@ async function finalizePayment() {
     try {
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        const transactionType = pendingTransfer.isQRPayment ? 'Pagamento QR Code' : 'Transferência PIX';
-        const beneficiary = pendingTransfer.isQRPayment ? pendingTransfer.beneficiary : pendingTransfer.chave;
-        const amount = pendingTransfer.isQRPayment ? pendingTransfer.originalAmount : pendingTransfer.valor;
+        const transactionType = VIPBANK.pendingTransfer.isQRPayment ? 'Pagamento QR Code' : 'Transferência PIX';
+        const beneficiary = VIPBANK.pendingTransfer.isQRPayment ? VIPBANK.pendingTransfer.beneficiary : VIPBANK.pendingTransfer.chave;
+        const amount = VIPBANK.pendingTransfer.isQRPayment ? VIPBANK.pendingTransfer.originalAmount : VIPBANK.pendingTransfer.valor;
 
         // Gerar authCode único
         const authCode = gerarAuthCode();
@@ -482,11 +477,11 @@ async function finalizePayment() {
             type: transactionType,
             amount: amount,
             dest: beneficiary,
-            date: pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            description: pendingTransfer.descricao || '',
+            date: VIPBANK.pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            description: VIPBANK.pendingTransfer.descricao || '',
             isCredit: false,
-            fee: pendingTransfer.fee || 0,
-            usuarioId: currentUser.uid
+            fee: VIPBANK.pendingTransfer.fee || 0,
+            usuarioId: VIPBANK.currentUser.uid
         };
 
         // Validar campos obrigatórios
@@ -495,19 +490,19 @@ async function finalizePayment() {
         }
         
         // Salva a transação via Cloud Function
-        const criarTransacao = functions.httpsCallable('criarTransacao');
+        const criarTransacao = VIPBANK.functions.httpsCallable('criarTransacao');
         await criarTransacao({ transacao: newTransaction });
         
         // Adiciona a transação à lista local
-        transactions.unshift(newTransaction);
+        VIPBANK.transactions.unshift(newTransaction);
         
-        if (pendingTransfer.fee && pendingTransfer.fee > 0) {
+        if (VIPBANK.pendingTransfer.fee && VIPBANK.pendingTransfer.fee > 0) {
             // Grava taxa no cofre central via Cloud Function (apenas admin)
             try {
-                const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+                const atualizarConfig = VIPBANK.functions.httpsCallable('atualizarConfiguracoesAdmin');
                 await atualizarConfig({
                     configs: {
-                        lucro_total: firebase.firestore.FieldValue.increment(pendingTransfer.fee)
+                        lucro_total: firebase.firestore.FieldValue.increment(VIPBANK.pendingTransfer.fee)
                     }
                 });
                 await updateProfitDisplay();
@@ -525,10 +520,10 @@ async function finalizePayment() {
         closeSecurityModal();
         document.getElementById('modal-transfer-pix').style.display = 'none';
         
-        const transactionDate = pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+        const transactionDate = VIPBANK.pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
         
         // Show receipt immediately
-        showReceipt(transactionType, amount, beneficiary, transactionDate, pendingTransfer.description, authCode);
+        showReceipt(transactionType, amount, beneficiary, transactionDate, VIPBANK.pendingTransfer.description, authCode);
         toast('Transferência concluída com sucesso!', 'sucesso');
         
     } catch (e) {
@@ -536,7 +531,7 @@ async function finalizePayment() {
     } finally {
         btn.disabled = false;
         btn.innerText = 'FINALIZAR PAGAMENTO';
-        pendingTransfer = null;
+        VIPBANK.pendingTransfer = null;
     }
 }
 
@@ -563,7 +558,7 @@ function renderTransactions() {
     const list = document.getElementById('trans-list');
     if (!list) return;
     
-    if (transactions.length === 0) {
+    if (VIPBANK.transactions.length === 0) {
         list.innerHTML = `
             <div style="text-align: center; padding: 40px 20px;">
                 <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">
@@ -577,7 +572,7 @@ function renderTransactions() {
         return;
     }
     
-    const recentTransactions = transactions.slice(0, 3);
+    const recentTransactions = VIPBANK.transactions.slice(0, 3);
     
     const groupedTransactions = {};
     const today = new Date().toLocaleDateString('pt-BR');
@@ -602,8 +597,8 @@ function renderTransactions() {
         `;
         
         groupedTransactions[date].forEach(t => {
-            const displayAmount = balanceHidden ? '•••' : `${t.isCredit ? '+' : '-'} R$ ${t.amount.toFixed(2).replace('.', ',')}`;
-            const displayDest = balanceHidden ? '•••' : t.dest;
+            const displayAmount = VIPBANK.balanceHidden ? '•••' : `${t.isCredit ? '+' : '-'} R$ ${t.amount.toFixed(2).replace('.', ',')}`;
+            const displayDest = VIPBANK.balanceHidden ? '•••' : t.dest;
             const amountColor = t.isCredit ? 'var(--success-color)' : 'var(--text-primary)';
             
             html += `
@@ -628,7 +623,7 @@ function renderTransactions() {
 // Exibir comprovante a partir de ID de transação no Firestore
 async function exibirComprovante(transacaoId) {
     try {
-        const doc = await db.collection('transacoes').doc(transacaoId.toString()).get();
+        const doc = await VIPBANK.db.collection('transacoes').doc(transacaoId.toString()).get();
         
         if (!doc.exists) {
             toast('Comprovante não encontrado!', 'erro');
@@ -754,10 +749,10 @@ function printReceipt() {
 function updateUI() {
     const balanceText = document.getElementById('txt-saldo');
     if (balanceText) {
-        if (balanceHidden) {
+        if (VIPBANK.balanceHidden) {
             balanceText.innerText = '•••';
         } else {
-            balanceText.innerText = balance.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            balanceText.innerText = VIPBANK.balance.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         }
     }
     renderTransactions();
@@ -771,7 +766,7 @@ function startQRScanner() {
     
     showModal('modal-qr-scanner');
     
-    qrScanner = new Html5Qrcode("qr-reader");
+    VIPBANK.qrScanner = new Html5Qrcode("qr-reader");
     
     const config = { 
         fps: 10, 
@@ -779,7 +774,7 @@ function startQRScanner() {
         aspectRatio: 1.0
     };
     
-    qrScanner.start(
+    VIPBANK.qrScanner.start(
         { facingMode: "environment" },
         config,
         (decodedText, decodedResult) => {
@@ -795,10 +790,10 @@ function startQRScanner() {
 }
 
 function stopQRScanner() {
-    if (qrScanner) {
-        qrScanner.stop().then(() => {
-            qrScanner.clear();
-            qrScanner = null;
+    if (VIPBANK.qrScanner) {
+        VIPBANK.qrScanner.stop().then(() => {
+            VIPBANK.qrScanner.clear();
+            VIPBANK.qrScanner = null;
         }).catch((err) => {
             console.error('Erro ao parar scanner:', err);
         });
@@ -827,7 +822,7 @@ function processQRCode(qrData) {
         
         const dynamicFee = calculateQRFee();
         
-        qrPaymentData = {
+        VIPBANK.qrPaymentData = {
             ...mockData,
             totalAmount: mockData.amount + dynamicFee,
             fee: dynamicFee
@@ -835,9 +830,9 @@ function processQRCode(qrData) {
         
         stopQRScanner();
         
-        document.getElementById('qr-beneficiary').innerText = qrPaymentData.beneficiary;
-        document.getElementById('qr-amount').innerText = qrPaymentData.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        document.getElementById('qr-fee').innerText = `Taxa de serviço: ${qrPaymentData.fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+        document.getElementById('qr-beneficiary').innerText = VIPBANK.qrPaymentData.beneficiary;
+        document.getElementById('qr-amount').innerText = VIPBANK.qrPaymentData.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('qr-fee').innerText = `Taxa de serviço: ${VIPBANK.qrPaymentData.fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
         
         showModal('modal-qr-payment');
         
@@ -848,36 +843,36 @@ function processQRCode(qrData) {
 }
 
 function confirmQRPayment() {
-    if (!qrPaymentData) {
+    if (!VIPBANK.qrPaymentData) {
         toast('Erro nos dados do pagamento', 'erro');
         return;
     }
     
-    const totalRequired = qrPaymentData.totalAmount;
-    if (balance < totalRequired) {
+    const totalRequired = VIPBANK.qrPaymentData.totalAmount;
+    if (VIPBANK.balance < totalRequired) {
         toast('Saldo insuficiente para incluir taxa!', 'erro');
         return;
     }
     
     closeQRPayment();
-    openSecurityModal(totalRequired, qrPaymentData.key);
+    openSecurityModal(totalRequired, VIPBANK.qrPaymentData.key);
     
-    pendingTransfer = { 
-        ...pendingTransfer, 
+    VIPBANK.pendingTransfer = { 
+        ...VIPBANK.pendingTransfer, 
         isQRPayment: true,
-        beneficiary: qrPaymentData.beneficiary,
-        originalAmount: qrPaymentData.amount,
-        fee: qrPaymentData.fee
+        beneficiary: VIPBANK.qrPaymentData.beneficiary,
+        originalAmount: VIPBANK.qrPaymentData.amount,
+        fee: VIPBANK.qrPaymentData.fee
     };
 }
 
 function closeQRPayment() {
     document.getElementById('modal-qr-payment').style.display = 'none';
-    qrPaymentData = null;
+    VIPBANK.qrPaymentData = null;
 }
 
 async function saveKey() { 
-    if (!isAdmin) {
+    if (!VIPBANK.isAdmin) {
         toast('Acesso negado! Apenas administradores podem alterar configurações.', 'erro');
         return;
     }
@@ -885,14 +880,14 @@ async function saveKey() {
     
     try {
         // Salvar via Cloud Function
-        const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+        const atualizarConfig = VIPBANK.functions.httpsCallable('atualizarConfiguracoesAdmin');
         await atualizarConfig({
             configs: {
                 asaas_api_key: newApiKey
             }
         });
         
-        apiKey = newApiKey;
+        VIPBANK.apiKey = newApiKey;
         toast('Configuração salva com sucesso!', 'sucesso'); 
         closeModals(); 
     } catch (error) {
@@ -908,7 +903,7 @@ async function updateProfitDisplay() {
     if (profitDisplay) {
         try {
             // Busca lucro direto do documento mestre admin/configuracoes
-            const adminDoc = await db.collection('admin').doc('configuracoes').get();
+            const adminDoc = await VIPBANK.db.collection('admin').doc('configuracoes').get();
             const lucroTotal = adminDoc.exists ? adminDoc.data().lucro_total || 0 : 0;
             profitDisplay.innerText = lucroTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         } catch (error) {
@@ -919,28 +914,28 @@ async function updateProfitDisplay() {
 }
 
 function calculatePixFee() {
-    if (userCPF.length === 11) {
+    if (VIPBANK.userCPF.length === 11) {
         return 0;
-    } else if (userCPF.length === 14) {
-        return ASAAS_PIX_FEE;
+    } else if (VIPBANK.userCPF.length === 14) {
+        return VIPBANK.ASAAS_PIX_FEE;
     } else {
-        return ASAAS_PIX_FEE;
+        return VIPBANK.ASAAS_PIX_FEE;
     }
 }
 
 function calculateQRFee() {
     // Pagamento de boletos/contas cobra taxa para TODOS
-    return ASAAS_PIX_FEE;
+    return VIPBANK.ASAAS_PIX_FEE;
 }
 
 async function redeemProfit() {
-    if (currentUser && currentUser.email !== ADMIN_EMAIL) {
+    if (VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem resgatar lucros.', 'erro');
         return;
     }
     
     try {
-        const resgatarLucro = functions.httpsCallable('resgatarLucroAdmin');
+        const resgatarLucro = VIPBANK.functions.httpsCallable('resgatarLucroAdmin');
         const result = await resgatarLucro();
         
         if (result.data.sucesso) {
@@ -951,8 +946,8 @@ async function redeemProfit() {
             
             // Atualiza displays
             await updateProfitDisplay();
-            if (currentUser.email === ADMIN_EMAIL) {
-                balance = newBalance;
+            if (VIPBANK.currentUser.email === ADMIN_EMAIL) {
+                VIPBANK.balance = newBalance;
                 updateUI();
             }
         } else {
@@ -970,16 +965,16 @@ function renderFullExtract() {
     
     if (!balanceElement || !listElement) return;
     
-    balanceElement.innerText = balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    balanceElement.innerText = VIPBANK.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     
     let html = '';
     
-    if (transactions.length === 0) {
+    if (VIPBANK.transactions.length === 0) {
         html = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma transação encontrada</div>';
     } else {
-        transactions.forEach(t => {
-            const displayAmount = balanceHidden ? '•••' : `${t.isCredit ? '+' : '-'} R$ ${t.amount.toFixed(2).replace('.', ',')}`;
-            const displayDest = balanceHidden ? '•••' : t.dest;
+        VIPBANK.transactions.forEach(t => {
+            const displayAmount = VIPBANK.balanceHidden ? '•••' : `${t.isCredit ? '+' : '-'} R$ ${t.amount.toFixed(2).replace('.', ',')}`;
+            const displayDest = VIPBANK.balanceHidden ? '•••' : t.dest;
             const amountColor = t.isCredit ? 'var(--success-color)' : 'var(--danger-color)';
             
             html += `
@@ -1091,21 +1086,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Segurança: Encerra sessão ao fechar ou ocultar a aba
 document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden' && currentUser) {
+    if (document.visibilityState === 'hidden' && VIPBANK.currentUser) {
         sairComSeguranca();
     }
 });
 
 function initializeNotifications() {
     // Calcula transações não visualizadas (últimas 5)
-    if (transactions && transactions.length > 0) {
-        const recentTransactions = transactions.slice(-5);
-        unreadTransactions = recentTransactions.length;
+    if (VIPBANK.transactions && VIPBANK.transactions.length > 0) {
+        const recentTransactions = VIPBANK.transactions.slice(-5);
+        VIPBANK.unreadTransactions = recentTransactions.length;
         
         // Mostra ponto vermelho se houver transações não visualizadas
         const notificationDot = document.getElementById('notification-dot');
         if (notificationDot) {
-            notificationDot.style.display = unreadTransactions > 0 ? 'block' : 'none';
+            notificationDot.style.display = VIPBANK.unreadTransactions > 0 ? 'block' : 'none';
         }
     }
 }
@@ -1113,9 +1108,9 @@ function initializeNotifications() {
 function showNotifications() {
     const notificationsList = document.getElementById('notifications-list');
     
-    if (transactions && transactions.length > 0) {
+    if (VIPBANK.transactions && VIPBANK.transactions.length > 0) {
         // Pega as 5 últimas transações
-        const recentTransactions = transactions.slice(-5).reverse();
+        const recentTransactions = VIPBANK.transactions.slice(-5).reverse();
         
         let html = '';
         recentTransactions.forEach(t => {
@@ -1142,7 +1137,7 @@ function showNotifications() {
         if (notificationDot) {
             notificationDot.style.display = 'none';
         }
-        unreadTransactions = 0;
+        VIPBANK.unreadTransactions = 0;
     } else {
         notificationsList.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma transação encontrada.</div>';
     }
@@ -1151,9 +1146,9 @@ function showNotifications() {
 }
 
 function showAdminPanel() {
-    if (currentUser && currentUser.email !== ADMIN_EMAIL) {
+    if (VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado!', 'erro');
-        console.error('Tentativa de acesso não autorizado ao painel admin:', currentUser.email);
+        console.error('Tentativa de acesso não autorizado ao painel admin:', VIPBANK.currentUser.email);
         return;
     }
     
@@ -1163,7 +1158,7 @@ function showAdminPanel() {
 
 
 async function savePixFee() {
-    if (currentUser && currentUser.email !== ADMIN_EMAIL) {
+    if (VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado!', 'erro');
         return;
     }
@@ -1177,14 +1172,14 @@ async function savePixFee() {
     }
     
     try {
-        const atualizarConfig = functions.httpsCallable('atualizarConfiguracoesAdmin');
+        const atualizarConfig = VIPBANK.functions.httpsCallable('atualizarConfiguracoesAdmin');
         await atualizarConfig({
             configs: {
                 valor_taxa_pix: newFee
             }
         });
         
-        ASAAS_PIX_FEE = newFee;
+        VIPBANK.ASAAS_PIX_FEE = newFee;
         toast(`Taxa Pix atualizada para R$ ${newFee.toFixed(2)}`, 'sucesso');
         feeInput.value = '';
     } catch (error) {
@@ -1198,13 +1193,13 @@ async function deletarMinhaConta() {
     if (!confirmar) return;
 
     const senha = prompt("Por segurança, digite sua SENHA DE ACESSO para confirmar a exclusão:");
-    if (senha !== globalUserData.senha) {
+    if (senha !== VIPBANK.globalUserData.senha) {
         toast("Senha incorreta! Operação cancelada.", "erro");
         return;
     }
 
     try {
-        const deletarConta = functions.httpsCallable('deletarContaUsuario');
+        const deletarConta = VIPBANK.functions.httpsCallable('deletarContaUsuario');
         await deletarConta();
         
         alert("Conta VIP encerrada com sucesso. Seus dados foram removidos.");
@@ -1216,14 +1211,14 @@ async function deletarMinhaConta() {
 }
 
 function saveData() {
-    if (currentUser) {
+    if (VIPBANK.currentUser) {
         saveUserData();
     }
 }
 
 function updateBalanceAndTransactions(newBalance, newTransactions) {
-    balance = newBalance;
-    transactions = newTransactions;
+    VIPBANK.balance = newBalance;
+    VIPBANK.transactions = newTransactions;
     saveData();
     updateUI();
 }
@@ -1235,21 +1230,21 @@ async function forceLogin() {
     
     try {
         // 1. Tenta buscar o documento do dono diretamente no Firestore
-        const userDoc = await db.collection('usuarios').doc(OWNER_UID).get();
+        const userDoc = await VIPBANK.db.collection('usuarios').doc(OWNER_UID).get();
         
         if (userDoc.exists) {
             const userData = userDoc.data();
             console.log('✅ Dados do dono carregados:', userData);
             
             // 2. Atualiza as variáveis globais
-            currentUser = {
+            VIPBANK.currentUser = {
                 uid: OWNER_UID,
                 email: userData.email,
                 displayName: userData.nome
             };
-            globalUserData = userData;
-            balance = userData.balance || 0;
-            transactions = userData.transactions || [];
+            VIPBANK.globalUserData = userData;
+            VIPBANK.balance = userData.balance || 0;
+            VIPBANK.transactions = userData.transactions || [];
             
             // 3. Mostra o painel principal
             entrar();

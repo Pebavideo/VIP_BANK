@@ -1,8 +1,6 @@
 console.log('✅ src/api/asaas.js carregado');
 
-// Aliases para VIPBANK namespace
-const { db, functions, currentUser, transactions } = VIPBANK;
-
+// TODOS OS ACESSOS DIRETOS VIA VIPBANK (sem redeclarações!)
 let qrCodeInstance = null;
 let pixCopiaCola = '';
 
@@ -15,10 +13,10 @@ async function gerarCobrancaPix() {
         return;
     }
 
-    // Obter a API key do Asaas (primeiro tenta do admin, pois deve ser uma chave de produção/sandbox)
+    // Obter a API key do Asaas (primeiro tenta do admin, pois deve ser uma chave de produção/sanVIPBANK.dbox)
     let asaasApiKey;
     try {
-        const adminDoc = await db.collection('admin').doc('configuracoes').get();
+        const adminDoc = await VIPBANK.db.collection('admin').doc('configuracoes').get();
         if (adminDoc.exists && adminDoc.data().asaas_api_key) {
             asaasApiKey = adminDoc.data().asaas_api_key;
         }
@@ -48,8 +46,8 @@ async function gerarCobrancaPix() {
                 billingType: 'PIX',
                 value: value,
                 dueDate: new Date().toISOString().split('T')[0],
-                description: `Depósito VIP BANK - ${currentUser.email}`,
-                customer: currentUser.uid // opcional: se você pode criar clientes no Asaas
+                description: `Depósito VIP BANK - ${VIPBANK.currentUser.email}`,
+                customer: VIPBANK.currentUser.uid // opcional: se você pode criar clientes no Asaas
             })
         });
 
@@ -103,7 +101,7 @@ async function gerarCobrancaPix() {
             asaasInvoiceUrl: data.invoiceUrl,
             pixPayload: pixData.payload,
             pixQrCode: pixData.encodedImage,
-            usuarioId: currentUser.uid
+            usuarioId: VIPBANK.currentUser.uid
         };
 
         // Validar campos obrigatórios
@@ -111,10 +109,10 @@ async function gerarCobrancaPix() {
             throw new Error('Validação de transação falhou');
         }
 
-        transactions.unshift(newTransaction);
+        VIPBANK.transactions.unshift(newTransaction);
 
         // Salvar transação via Cloud Function
-        const criarTransacao = functions.httpsCallable('criarTransacao');
+        const criarTransacao = VIPBANK.functions.httpsCallable('criarTransacao');
         await criarTransacao({ transacao: newTransaction });
 
         await saveUserData();
