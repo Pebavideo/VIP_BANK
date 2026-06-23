@@ -475,33 +475,36 @@
     <div id="error-toast"></div>
 
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
-    <script src="src/core.js"></script>
+    <script src="src/core.js" defer></script>
     
     <!-- Carregar main.js primeiro (contém funções globais como toast, showModal) -->
-    <script src="src/main.js"></script>
-    <script src="src/auth/index.js"></script>
-    <script src="src/api/asaas.js"></script>
+    <script src="src/main.js" defer></script>
+    <script src="src/auth/index.js" defer></script>
+    <script src="src/api/asaas.js" defer></script>
 
     <!-- Debug Script (Verificação de Funções Globais) -->
-    <script>
-        console.log("=== AUDITORIA DE FUNÇÕES GLOBAIS ===");
-        console.log("window.iniciarLogin:", typeof window.iniciarLogin);
-        console.log("window.abrirConta:", typeof window.abrirConta);
-        console.log("window.toast:", typeof window.toast);
-        console.log("window.showModal:", typeof window.showModal);
-        console.log("window.verificarLogin:", typeof window.verificarLogin);
-        console.log("=== FIM AUDITORIA ===");
+    <script defer>
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("=== AUDITORIA DE FUNÇÕES GLOBAIS ===");
+            console.log("window.iniciarLogin:", typeof window.iniciarLogin);
+            console.log("window.abrirConta:", typeof window.abrirConta);
+            console.log("window.toast:", typeof window.toast);
+            console.log("window.showModal:", typeof window.showModal);
+            console.log("window.verificarLogin:", typeof window.verificarLogin);
+            console.log("window.loadUserData:", typeof window.loadUserData);
+            console.log("=== FIM AUDITORIA ===");
 
-        // Teste de clique (para confirmar que não há bloqueio de z-index)
-        const btnEntrar = document.getElementById('btn-entrar-google');
-        if (btnEntrar) {
-            console.log("✅ Botão 'ENTRAR NA MINHA CONTA' encontrado no DOM!");
-            console.log("Botão z-index:", window.getComputedStyle(btnEntrar).zIndex);
-            console.log("Botão pointer-events:", window.getComputedStyle(btnEntrar).pointerEvents);
-            console.log("Botão position:", window.getComputedStyle(btnEntrar).position);
-        } else {
-            console.error("❌ Botão 'ENTRAR NA MINHA CONTA' NÃO ENCONTRADO!");
-        }
+            // Teste de clique (para confirmar que não há bloqueio de z-index)
+            const btnEntrar = document.getElementById('btn-entrar-google');
+            if (btnEntrar) {
+                console.log("✅ Botão 'ENTRAR NA MINHA CONTA' encontrado no DOM!");
+                console.log("Botão z-index:", window.getComputedStyle(btnEntrar).zIndex);
+                console.log("Botão pointer-events:", window.getComputedStyle(btnEntrar).pointerEvents);
+                console.log("Botão position:", window.getComputedStyle(btnEntrar).position);
+            } else {
+                console.error("❌ Botão 'ENTRAR NA MINHA CONTA' NÃO ENCONTRADO!");
+            }
+        });
     </script>
 </body>
 </html>

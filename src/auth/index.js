@@ -440,6 +440,9 @@ async function loadUserData() {
     });
 }
 
+// Vincula loadUserData ao window
+window.loadUserData = loadUserData;
+
 // Salva dados do usuário no Firestore via Cloud Function
 async function saveUserData() {
     if (!VIPBANK.currentUser) return;
@@ -509,16 +512,19 @@ async function verificarLogin() {
         toast('Erro ao acessar conta. Tente novamente.', 'erro');
     }
 }
-
-// Vincula funções ao window para acesso global
 window.verificarLogin = verificarLogin;
-window.iniciarLogin = async function() { 
-    await verificarLogin(); 
-};
 
-window.abrirConta = async function() {
+// Função iniciarLogin (wrapper para verificarLogin)
+async function iniciarLogin() {
+    await verificarLogin();
+}
+window.iniciarLogin = iniciarLogin;
+
+// Função abrirConta
+async function abrirConta() {
     await verificarAntesDeCriar();
-};
+}
+window.abrirConta = abrirConta;
 window.signInWithGoogle = signInWithGoogle;
 window.resetPasswordManual = resetPasswordManual;
 window.entrarComCredenciais = entrarComCredenciais;
