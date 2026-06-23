@@ -1056,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnEntrar) {
         btnEntrar.addEventListener('click', async (e) => {
             e.preventDefault();
+            console.log('Botão clicado!');
             if (window.iniciarLogin) {
                 await window.iniciarLogin();
             } else if (window.verificarLogin) {

@@ -462,6 +462,7 @@ async function saveUserData() {
 
 // Função principal de verificação de login
 async function verificarLogin() {
+    console.log('Iniciando verificarLogin...');
 
     const OWNER_UID = 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2';
     
@@ -505,20 +506,23 @@ async function verificarLogin() {
             toast('Nenhuma conta VIP encontrada. Cadastre-se primeiro.', 'erro');
             showCreateAccountForm();
         }
-        
+        console.log('Login bem sucedido');
     } catch (error) {
         console.error('❌ Erro na verificação de login:', error);
+        console.error('Erro no login:', error);
         toast('Erro ao acessar conta. Tente novamente.', 'erro');
     }
 }
 
 // Função iniciarLogin (wrapper para verificarLogin)
 async function iniciarLogin() {
+    console.log('iniciarLogin wrapper chamado');
     await verificarLogin();
 }
 
 // Função abrirConta
 async function abrirConta() {
+    console.log('abrirConta wrapper chamado');
     await verificarAntesDeCriar();
 }
 
