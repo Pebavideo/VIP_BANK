@@ -13,7 +13,7 @@ async function loadPixFee() {
             VIPBANK.ASAAS_PIX_FEE = 3.99;
         }
     } catch (error) {
-        console.error('Erro ao carregar taxa Pix:', error);
+
         VIPBANK.ASAAS_PIX_FEE = 3.99;
     }
 }
@@ -109,7 +109,7 @@ async function verificarSenhaEncerramento() {
             toast('Encerramento de conta cancelado.', 'info');
         }
     } catch (error) {
-        console.error('Erro ao reautenticar ou encerrar conta:', error);
+
         if (error.code === 'auth/wrong-password') {
             toast('Senha incorreta. Tente novamente.', 'erro');
         } else {
@@ -143,7 +143,7 @@ async function encerrarContaVIP() {
             location.reload();
         }, 2000);
     } catch (error) {
-        console.error('Erro ao encerrar conta:', error);
+
         toast('Ocorreu um erro. Tente novamente mais tarde.', 'erro');
     }
 }
@@ -171,7 +171,6 @@ function validarTransacaoObrigatoria(transacao) {
     });
     
     if (camposFaltantes.length > 0) {
-        console.error('Transação bloqueada: campos obrigatórios faltantes', camposFaltantes, transacao);
         return false;
     }
     
@@ -201,7 +200,6 @@ async function calcularSaldoAtualizado(usuarioId) {
             .where('usuarioId', '==', usuarioId)
             .where('status', '==', 'CONFIRMADO')
             .get();
-        
         let saldoEmCentavos = 0; // Trabalha com centavos para evitar erros de ponto flutuante
         
         snapshot.forEach(doc => {
@@ -222,7 +220,7 @@ async function calcularSaldoAtualizado(usuarioId) {
         
         return saldoEmCentavos / 100;
     } catch (error) {
-        console.error('Erro ao calcular saldo:', error);
+
         return null;
     }
 }
@@ -246,9 +244,6 @@ async function auditarPrecisaoSaldo() {
         const saldoSalvoArredondado = Math.round(saldoSalvo * 100);
         
         if (saldoCalculadoArredondado !== saldoSalvoArredondado) {
-            console.error('ERRO DE PRECISÃO SALDO!');
-            console.error(`Saldo Calculado: R$ ${saldoCalculado.toFixed(2)}, Saldo Salvo: R$ ${saldoSalvo.toFixed(2)}`);
-            
             // Registrar erro na coleção logs_erro via Cloud Function
             const registrarLog = VIPBANK.functions.httpsCallable('registrarLogErro');
             await registrarLog({
@@ -263,7 +258,6 @@ async function auditarPrecisaoSaldo() {
             toast('Aviso: Verificação de saldo detectou inconsistência.', 'erro');
         }
     } catch (error) {
-        console.error('Erro na auditoria de precisão:', error);
     }
 }
 
@@ -281,6 +275,18 @@ async function loadAdminData() {
         const countElement = document.getElementById('user-count-display');
         if (countElement) {
             countElement.textContent = users.length;
+        }
+        
+        // Atualizar contador de clientes (apenas para admin)
+        const clientesElement = document.getElementById('contagem-clientes');
+        const clientesValorElement = document.getElementById('contagem-clientes-valor');
+        if (clientesElement && clientesValorElement) {
+            if (VIPBANK.currentUser && VIPBANK.currentUser.email === VIPBANK.ADMIN_EMAIL) {
+                clientesElement.style.display = 'block';
+                clientesValorElement.textContent = 'Total de clientes: ' + usersSnapshot.size;
+            } else {
+                clientesElement.style.display = 'none';
+            }
         }
         
         // Renderizar lista de usuários
@@ -315,7 +321,7 @@ async function loadAdminData() {
             }
         }
     } catch (error) {
-        console.error('Erro ao carregar dados admin:', error);
+
         toast('Erro ao carregar painel.', 'erro');
     }
 }
@@ -354,8 +360,6 @@ async function loadUserData() {
                 VIPBANK.transactions.push(doc.data());
             });
                     
-                    VIPBANK.userPassword = userData.senha || '';
-                    VIPBANK.userTransPassword = userData.senha_transacional || '';
                     VIPBANK.userCPF = userData.cpf || '';
                     VIPBANK.userPixKey = userData.chave_ativa || '';
                     VIPBANK.apiKey = userData.VIPBANK.apiKey || '';
@@ -437,7 +441,7 @@ async function loadUserData() {
                     if (createForm) createForm.style.display = 'block';
                 }
                 updateUI();
-            } catch (error) { console.error("Erro Firestore:", error); }
+            } catch (error) { }
         } else {
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('main-content').style.display = 'none';
@@ -461,14 +465,14 @@ async function saveUserData() {
             }
         });
     } catch (error) {
-        console.error('Erro ao salvar dados:', error);
+
         toast('Erro ao salvar dados no servidor', 'erro');
     }
 }
 
 // Função principal de verificação de login
 async function verificarLogin() {
-    console.log('Iniciando verificarLogin...');
+
 
     // Loading state: disable btn-entrar-google
     const loginBtn = document.getElementById('btn-entrar-google');
@@ -506,8 +510,6 @@ async function verificarLogin() {
             return;
         }
     } catch (error) {
-        console.error('❌ Erro na verificação de login:', error);
-        console.error('Erro no login:', error);
         toast('Erro ao acessar conta. Tente novamente.', 'erro');
     } finally {
         // Always re-enable the button, even if there's an error
@@ -522,13 +524,13 @@ async function verificarLogin() {
 
 // Função iniciarLogin (wrapper para verificarLogin)
 async function iniciarLogin() {
-    console.log('iniciarLogin wrapper chamado');
+
     await verificarLogin();
 }
 
 // Função abrirConta
 async function abrirConta() {
-    console.log('abrirConta wrapper chamado');
+
     await verificarAntesDeCriar();
 }
 
@@ -599,7 +601,6 @@ async function entrarComCredenciais() {
             showCreateAccountForm();
         }
     } catch (error) {
-        console.error('Erro na reautenticação ou carregamento de dados:', error);
         if (error.code === 'auth/wrong-password') {
             toast('Senha incorreta. Tente novamente.', 'erro');
         } else {
@@ -648,7 +649,6 @@ function sairComSeguranca() {
         // 5. Confirmação visual
         toast('Sessão encerrada com segurança', false);
     }).catch((error) => {
-        console.error('Erro ao sair:', error);
         // Mesmo em erro, força volta para login por segurança
         document.getElementById('main-content').style.display = 'none';
         document.getElementById('login-screen').style.display = 'flex';
@@ -663,7 +663,6 @@ function showCreateAccountForm() {
 async function verificarAntesDeCriar() {
     try {
         // Abre popup do Google Login
-        console.log('Iniciando popup...');
         const provider = new firebase.auth.GoogleAuthProvider();
         const result = await VIPBANK.auth.signInWithPopup(provider);
         const user = result.user;
@@ -672,7 +671,6 @@ async function verificarAntesDeCriar() {
         document.getElementById('manual-login-id').value = user.email;
         showModal('modal-login-manual');
     } catch (error) {
-        console.error('Erro na verificação:', error);
         toast('Erro ao verificar conta. Tente novamente.', true);
     }
 }
@@ -689,11 +687,17 @@ async function handleRegistration() {
     const email = document.getElementById('email-field').value.trim();
     const celular = document.getElementById('celular-field').value.trim();
     const senha = document.getElementById('senha-field').value.trim();
+    const confirmarSenha = document.getElementById('confirmar-senha-field').value.trim();
     const senhaTransacional = document.getElementById('senha-transacional-field').value.trim();
     
     // Trava de segurança: se algum campo estiver vazio, não abre o Google
-    if (!nome || !cpf || !email || !celular || !senha || !senhaTransacional) {
+    if (!nome || !cpf || !email || !celular || !senha || !confirmarSenha || !senhaTransacional) {
         toast('ERRO: Preencha TODOS os campos para continuar!', true);
+        return;
+    }
+
+    if (senha !== confirmarSenha) {
+        toast('ERRO: As senhas de acesso não coincidem!', true);
         return;
     }
     
@@ -725,7 +729,6 @@ async function handleRegistration() {
         // Se não existe, salva o formulário
         await finalizeAccount(user.uid);
     } catch (error) {
-        console.error(error);
         toast('Erro: ' + error.message, true);
         btn.disabled = false;
         btn.innerText = 'FINALIZAR CADASTRO VIP';
@@ -821,8 +824,6 @@ async function finalizeAccount(uid) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        console.log('📤 Enviando dados para Cloud Function:', dadosUsuario);
-        
         // GRAVAÇÃO VIA CLOUD FUNCTION
         const criarConta = VIPBANK.functions.httpsCallable('criarContaUsuario');
         await criarConta({ dadosUsuario });
@@ -848,7 +849,6 @@ async function finalizeAccount(uid) {
         updateUI(); // Carrega os dados na tela
         
     } catch (error) {
-        console.error('Erro na ativação:', error);
         toast('Erro: ' + error.message, true);
     } finally {
         btn.disabled = false;
@@ -861,7 +861,6 @@ window.verificarLogin = verificarLogin;
 window.iniciarLogin = iniciarLogin;
 window.abrirConta = abrirConta;
 window.signInWithGoogle = signInWithGoogle;
-window.resetPasswordManual = resetPasswordManual;
 window.entrarComCredenciais = entrarComCredenciais;
 window.entrar = entrar;
 window.sairComSeguranca = sairComSeguranca;

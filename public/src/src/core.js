@@ -14,9 +14,6 @@ try {
     firebase.initializeApp(firebaseConfig);
 } catch (e) {
     // Se já inicializou (hot reload), ignora erro
-    if (!e.message.includes('already exists')) {
-        console.error('❌ Erro ao inicializar Firebase:', e);
-    }
 }
 
 // Namespace global VIPBANK (para evitar poluição)

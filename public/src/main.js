@@ -279,7 +279,7 @@ function toggleAdminMode() {
 function showModal(id) {
     if (id === 'modal-config' && VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem acessar configurações.', 'erro');
-        console.error('Tentativa de acesso não autorizado às configurações:', VIPBANK.currentUser.email);
+
         return;
     }
     
@@ -316,6 +316,9 @@ function showModal(id) {
 }
 
 function closeModals() {
+    const modalLoginManual = document.getElementById('modal-login-manual');
+    const isLoginManualOpen = modalLoginManual && modalLoginManual.style.display === 'block';
+
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     document.getElementById('modal-overlay').style.display = 'none';
     
@@ -335,6 +338,12 @@ function closeModals() {
     });
     
     VIPBANK.pendingTransfer = null;
+
+    // Se o modal de login manual foi fechado e o usuário está logado via Google mas não reautenticado
+    if (isLoginManualOpen && VIPBANK.auth.currentUser && !VIPBANK.globalUserData) {
+        VIPBANK.auth.signOut();
+        toast('Sessão encerrada por segurança.', 'info');
+    }
 }
 
 async function registerPixKey() {
@@ -384,7 +393,7 @@ async function registerPixKey() {
         closeModals();
         updateUI();
     } catch (error) {
-        console.error(error);
+
         toast('Erro ao atualizar banco de dados.', 'erro');
     } finally {
         btn.disabled = false;
@@ -534,7 +543,7 @@ async function finalizePayment() {
                 });
                 await updateProfitDisplay();
             } catch (error) {
-                console.error('Erro ao salvar taxa no cofre:', error);
+        
             }
         }
         
@@ -683,7 +692,7 @@ async function exibirComprovante(transacaoId) {
         showReceipt(tipoTransacao, parseFloat(transacao.valor), participante, dataHoraFormatada, banco, transacao.authCode);
         
     } catch (error) {
-        console.error('Erro ao carregar comprovante:', error);
+
         toast('Erro ao carregar comprovante!', 'erro');
     }
 }
@@ -810,8 +819,8 @@ function startQRScanner() {
         (errorMessage) => {
         }
     ).catch((err) => {
-        console.error('Erro ao iniciar câmera:', err);
-        toast('Certifique-se de dar permissão à câmera no seu navegador ou use uma conexão HTTPS', 'erro');
+
+        
         stopQRScanner();
     });
 }
@@ -822,7 +831,7 @@ function stopQRScanner() {
             VIPBANK.qrScanner.clear();
             VIPBANK.qrScanner = null;
         }).catch((err) => {
-            console.error('Erro ao parar scanner:', err);
+
         });
     }
     
@@ -864,7 +873,7 @@ function processQRCode(qrData) {
         showModal('modal-qr-payment');
         
     } catch (error) {
-        toast('QR Code inválido ou não suportado', 'erro');
+
         stopQRScanner();
     }
 }
@@ -918,7 +927,7 @@ async function saveKey() {
         toast('Configuração salva com sucesso!', 'sucesso'); 
         closeModals(); 
     } catch (error) {
-        console.error('Erro ao salvar API key:', error);
+
         toast('Erro ao salvar configuração.', 'erro');
     }
 }
@@ -934,7 +943,7 @@ async function updateProfitDisplay() {
             const lucroTotal = adminDoc.exists ? adminDoc.data().lucro_total || 0 : 0;
             profitDisplay.innerText = lucroTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         } catch (error) {
-            console.error('Erro ao carregar lucro do admin:', error);
+    
             profitDisplay.innerText = 'R$ 0,00';
         }
     }
@@ -981,8 +990,8 @@ async function redeemProfit() {
             toast(result.data.mensagem || 'Erro ao resgatar lucro', 'erro');
         }
     } catch (error) {
-        console.error('Erro ao resgatar lucro:', error);
-        toast('Erro ao resgatar lucro. Tente novamente.', 'erro');
+
+
     }
 }
 
@@ -1081,7 +1090,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnEntrar) {
         btnEntrar.addEventListener('click', async (e) => {
             e.preventDefault();
-            console.log('Botão clicado!');
             if (window.iniciarLogin) {
                 await window.iniciarLogin();
             } else if (window.verificarLogin) {
@@ -1184,7 +1192,6 @@ function showNotifications() {
 function showAdminPanel() {
     if (VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado!', 'erro');
-        console.error('Tentativa de acesso não autorizado ao painel admin:', VIPBANK.currentUser.email);
         return;
     }
     
@@ -1219,7 +1226,6 @@ async function savePixFee() {
         toast(`Taxa Pix atualizada para R$ ${newFee.toFixed(2)}`, 'sucesso');
         feeInput.value = '';
     } catch (error) {
-        console.error('Erro ao salvar taxa Pix:', error);
         toast('Erro ao salvar taxa. Tente novamente.', 'erro');
     }
 }
@@ -1228,7 +1234,6 @@ async function deletarMinhaConta() {
     // Regra 1: Verificar saldo é 0
     if (VIPBANK.balance > 0) {
         toast('Saque todo o saldo antes de encerrar!', 'erro');
-        console.error('Tentativa de encerrar conta com saldo:', VIPBANK.balance);
         return;
     }
 
@@ -1244,7 +1249,6 @@ async function deletarMinhaConta() {
     }
     if (senha !== VIPBANK.globalUserData.senha) {
         toast("Senha incorreta! Operação cancelada.", "erro");
-        console.error('Senha incorreta para encerramento de conta!');
         return;
     }
 
@@ -1260,7 +1264,6 @@ async function deletarMinhaConta() {
         alert("Conta VIP encerrada com sucesso. Seus dados foram removidos.");
         location.reload(); // Volta para a tela de login inicial
     } catch (error) {
-        console.error('Erro ao encerrar conta:', error);
         toast("Erro ao encerrar conta. Tente relogar e tentar novamente.", "erro");
     }
 }
@@ -1305,11 +1308,9 @@ async function forceLogin() {
             updateProfitDisplay();
             initializeNotifications();
         } else {
-            console.error('❌ Documento do dono não encontrado no Firestore');
             toast('Conta do dono não encontrada', 'erro');
         }
     } catch (error) {
-        console.error('❌ Erro ao forçar login:', error);
         toast('Erro ao acessar conta do dono', 'erro');
     }
 }

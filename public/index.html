@@ -99,6 +99,9 @@
             <label class="form-label">Senha de Acesso (Letras e Números)</label>
             <input type="password" class="form-field" id="senha-field" placeholder="Senha de Acesso (Letras e Números)" maxlength="10" autocomplete="new-password" required>
             
+            <label class="form-label">Confirmar Senha de Acesso</label>
+            <input type="password" class="form-field" id="confirmar-senha-field" placeholder="Confirme sua Senha de Acesso" maxlength="10" autocomplete="new-password" required>
+            
             <label class="form-label">Senha Transacional (6 números)</label>
             <input type="password" class="form-field" id="senha-transacional-field" placeholder="Senha Transacional (6 números)" maxlength="6" inputmode="numeric" oninput="window.maskTransactionPassword(this)" autocomplete="new-password" required>
             
@@ -247,6 +250,11 @@
         <div style="margin-bottom: 20px; padding: 15px; background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(255, 152, 0, 0.2);">
             <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total de Usuários</div>
             <div id="user-count-display" style="font-size: 24px; font-weight: 700; color: var(--accent-color);">0</div>
+        </div>
+        
+        <div id="contagem-clientes" style="margin-bottom: 20px; padding: 15px; background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(0, 200, 81, 0.2); display: none;">
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Total de Clientes</div>
+            <div id="contagem-clientes-valor" style="font-size: 24px; font-weight: 700; color: var(--success-color);">0</div>
         </div>
         
         <div style="margin-bottom: 20px;">

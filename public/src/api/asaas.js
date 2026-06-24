@@ -9,8 +9,8 @@ async function gerarCobrancaPix() {
     const value = parseFloat(valueInput.value.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
     
     if (value <= 0) {
-        toast('Valor inválido!', 'erro');
-        return;
+toast('Valor inválido!', 'erro');
+return;
     }
 
     const btnGerar = document.getElementById('btn-gerar-pix');
@@ -18,13 +18,13 @@ async function gerarCobrancaPix() {
     btnGerar.innerText = 'GERANDO...';
 
     try {
-        // Chamar Cloud Function segura
+// Chamar Cloud Function segura
         const gerarCobranca = VIPBANK.functions.httpsCallable('gerarCobrancaPixAsaas');
         const response = await gerarCobranca({ value: value });
         const result = response.data;
 
         if (!result.sucesso) {
-            throw new Error('Erro ao gerar cobrança');
+
         }
 
         pixCopiaCola = result.pixPayload;
@@ -73,8 +73,8 @@ async function gerarCobrancaPix() {
         toast('QR Code gerado com sucesso!', false);
 
     } catch (error) {
-        console.error('Erro:', error);
-        toast('Erro ao gerar cobrança Pix. Tente novamente.', 'erro');
+
+
     } finally {
         btnGerar.disabled = false;
         btnGerar.innerText = 'GERAR QR CODE PIX';

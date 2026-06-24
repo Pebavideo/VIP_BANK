@@ -73,7 +73,6 @@ async function gerarCobrancaPix() {
         toast('QR Code gerado com sucesso!', false);
 
     } catch (error) {
-        console.error('Erro:', error);
         toast('Erro ao gerar cobrança Pix. Tente novamente.', 'erro');
     } finally {
         btnGerar.disabled = false;
