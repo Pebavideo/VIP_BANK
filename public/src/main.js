@@ -289,15 +289,49 @@ function showModal(id) {
     if (overlay) overlay.style.display = 'block';
     if (modal) modal.style.display = 'block';
     
-    // Adicionar contagem de clientes para admin no modal config
+    // Adicionar lista de clientes para admin no modal config
     if (id === 'modal-config') {
+        console.log('Tentando carregar lista de clientes');
+        console.log('Current user email:', VIPBANK.currentUser?.email);
+        console.log('Admin email:', ADMIN_EMAIL);
+        
         const adminDashboard = document.getElementById('admin-dashboard-container');
-        if (adminDashboard && VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
-            adminDashboard.style.display = 'block';
-            VIPBANK.db.collection('usuarios').get().then(snapshot => {
-                const contador = document.getElementById('contagem-clientes');
-                if(contador) contador.innerText = snapshot.size;
-            });
+        if (adminDashboard) {
+            if (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
+                adminDashboard.style.display = 'block';
+                
+                const container = document.getElementById('contagem-clientes');
+                if (container) {
+                    container.innerHTML = 'Buscando clientes...';
+                    
+                    // Chamar Cloud Function segura
+                    const listarTodosUsuarios = VIPBANK.functions.httpsCallable('listarTodosUsuarios');
+                    listarTodosUsuarios().then(result => {
+                        container.innerHTML = '';
+                        const usuarios = result.data.usuarios;
+                        
+                        if (usuarios.length === 0) {
+                            container.innerHTML = 'Nenhum cliente.';
+                            return;
+                        }
+                        
+                        usuarios.forEach(nome => {
+                            const div = document.createElement('div');
+                            div.innerHTML = `- ${nome}`;
+                            div.style.marginBottom = '5px';
+                            container.appendChild(div);
+                        });
+                        
+                        console.log('Clientes carregados:', usuarios.length);
+                    }).catch(err => {
+                        console.error('Erro:', err);
+                        container.innerHTML = 'Erro ao carregar.';
+                    });
+                }
+            } else {
+                adminDashboard.style.display = 'none';
+                console.log('Não mostrando lista: currentUser:', !!VIPBANK.currentUser, 'email match:', VIPBANK.currentUser?.email === ADMIN_EMAIL);
+            }
         }
     }
     
@@ -1115,8 +1149,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAbrirConta) {
         btnAbrirConta.addEventListener('click', async (e) => {
             e.preventDefault();
-            if (window.abrirConta) {
-                await window.abrirConta();
+            if (window.showCreateAccountForm) {
+                window.showCreateAccountForm();
             }
         });
     }

@@ -298,6 +298,38 @@ exports.resgatarLucroAdmin = functions.https.onCall(async (data, context) => {
     }
 });
 
+// 8. Listar todos os usuários (apenas admin)
+exports.listarTodosUsuarios = functions.https.onCall(async (data, context) => {
+    const ADMIN_EMAIL = 'jjoserobertorocharocha@gmail.com';
+    
+    // Verificar autenticação e permissão
+    if (!context.auth || context.auth.token.email !== ADMIN_EMAIL) {
+        throw new functions.https.HttpsError('permission-denied', 'Acesso negado');
+    }
+
+    try {
+        // Buscar todos os usuários usando admin SDK (acesso total)
+        const snapshot = await db.collection('usuarios').get();
+        
+        // Extrair apenas os nomes
+        const nomes = [];
+        snapshot.forEach(doc => {
+            const dados = doc.data();
+            nomes.push(dados.nome || 'Sem nome');
+        });
+        
+        console.log(`✅ Lista de usuários retornada: ${nomes.length} usuários`);
+        
+        return {
+            sucesso: true,
+            usuarios: nomes
+        };
+    } catch (error) {
+        console.error('❌ Erro ao listar usuários:', error);
+        throw new functions.https.HttpsError('internal', 'Erro ao listar usuários', error);
+    }
+});
+
 // Função para validar a assinatura do webhook do Asaas
 function validarAssinaturaAsaas(assinatura, body, webhookSecret) {
     try {
