@@ -289,6 +289,18 @@ function showModal(id) {
     if (overlay) overlay.style.display = 'block';
     if (modal) modal.style.display = 'block';
     
+    // Adicionar contagem de clientes para admin no modal config
+    if (id === 'modal-config') {
+        const adminDashboard = document.getElementById('admin-dashboard-container');
+        if (adminDashboard && VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
+            adminDashboard.style.display = 'block';
+            VIPBANK.db.collection('usuarios').get().then(snapshot => {
+                const contador = document.getElementById('contagem-clientes');
+                if(contador) contador.innerText = snapshot.size;
+            });
+        }
+    }
+    
     if (id === 'modal-register-pix') {
         const statusDiv = document.getElementById('pix-key-status');
         const display = document.getElementById('active-pix-key-display');
