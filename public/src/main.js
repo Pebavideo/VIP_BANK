@@ -302,31 +302,31 @@ function showModal(id) {
                 
                 const container = document.getElementById('contagem-clientes');
                 if (container) {
-                    container.innerHTML = 'Buscando clientes...';
+                    container.innerHTML = 'Painel Admin (Offline - Verifique plano Firebase)';
                     
-                    // Chamar Cloud Function segura
-                    const listarTodosUsuarios = VIPBANK.functions.httpsCallable('listarTodosUsuarios');
-                    listarTodosUsuarios().then(result => {
-                        container.innerHTML = '';
-                        const usuarios = result.data.usuarios;
+                    // Chamar Cloud Function segura (desativada temporariamente)
+                    // const listarTodosUsuarios = VIPBANK.functions.httpsCallable('listarTodosUsuarios');
+                    // listarTodosUsuarios().then(result => {
+                    //     container.innerHTML = '';
+                    //     const usuarios = result.data.usuarios;
                         
-                        if (usuarios.length === 0) {
-                            container.innerHTML = 'Nenhum cliente.';
-                            return;
-                        }
+                    //     if (usuarios.length === 0) {
+                    //         container.innerHTML = 'Nenhum cliente.';
+                    //         return;
+                    //     }
                         
-                        usuarios.forEach(nome => {
-                            const div = document.createElement('div');
-                            div.innerHTML = `- ${nome}`;
-                            div.style.marginBottom = '5px';
-                            container.appendChild(div);
-                        });
+                    //     usuarios.forEach(nome => {
+                    //         const div = document.createElement('div');
+                    //         div.innerHTML = `- ${nome}`;
+                    //         div.style.marginBottom = '5px';
+                    //         container.appendChild(div);
+                    //     });
                         
-                        console.log('Clientes carregados:', usuarios.length);
-                    }).catch(err => {
-                        console.error('Erro:', err);
-                        container.innerHTML = 'Erro ao carregar.';
-                    });
+                    //     console.log('Clientes carregados:', usuarios.length);
+                    // }).catch(err => {
+                    //     console.error('Erro:', err);
+                    //     container.innerHTML = 'Erro ao carregar.';
+                    // });
                 }
             } else {
                 adminDashboard.style.display = 'none';

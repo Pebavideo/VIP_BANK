@@ -641,12 +641,16 @@ function sairComSeguranca() {
     const balanceDisplay = document.getElementById('txt-saldo');
     if (balanceDisplay) balanceDisplay.innerText = 'R$ 0,00';
 
-    // 4. Encerra sessão no Firebase, oculta dashboard e mostra login
+    // 4. Limpa cache local
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 5. Encerra sessão no Firebase, oculta dashboard e mostra login
     VIPBANK.auth.signOut().then(() => {
         document.getElementById('main-content').style.display = 'none';
         document.getElementById('login-screen').style.display = 'flex';
         
-        // 5. Confirmação visual
+        // 6. Confirmação visual
         toast('Sessão encerrada com segurança', false);
     }).catch((error) => {
         // Mesmo em erro, força volta para login por segurança
@@ -738,15 +742,15 @@ async function handleRegistration() {
 async function finalizeAccount(uid) {
     togglePixInput();
     const btn = document.getElementById('btn-finalizar-cadastro');
-    const nome = document.getElementById('nome-field').value;
-    const cpf = document.getElementById('cpf-field').value;
-    const email = document.getElementById('email-field').value;
-    const celular = document.getElementById('celular-field').value;
-    const whatsapp = document.getElementById('whatsapp-field').value;
-    const senha = document.getElementById('senha-field').value;
-    const senhaTransacional = document.getElementById('senha-transacional-field').value;
+    const nome = document.getElementById('nome-field').value.trim();
+    const cpf = document.getElementById('cpf-field').value.trim();
+    const email = document.getElementById('email-field').value.trim();
+    const celular = document.getElementById('celular-field').value.trim();
+    const whatsapp = document.getElementById('whatsapp-field').value.trim();
+    const senha = document.getElementById('senha-field').value.trim();
+    const senhaTransacional = document.getElementById('senha-transacional-field').value.trim();
     const pixType = document.getElementById('reg-pix-type').value;
-    const pixValue = document.getElementById('reg-pix-value').value || '';
+    const pixValue = document.getElementById('reg-pix-value').value.trim() || '';
     
     // Get new fields
     const nascDia = document.getElementById('nasc-dia').value;
