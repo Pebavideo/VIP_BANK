@@ -3,23 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏦 VIP BANK | Elite Digital</title>
+
+    <!-- PWA: instalação e atalho na tela inicial -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff9800">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="VIP BANK">
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="https://em-content.zobj.net/source/apple/354/bank_1f3e6.png">
-    <title>🏦 VIP BANK | Elite Digital</title>
+
+    <!-- Ícones (arquivos próprios, servidos localmente) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <!-- Open Graph: preview ao compartilhar no WhatsApp/Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="VIP BANK">
+    <meta property="og:title" content="🏦 VIP BANK | Elite Digital">
+    <meta property="og:description" content="Seu banco digital de elite. Saldo, PIX, extrato e comprovantes na palma da mão.">
+    <meta property="og:image" content="https://vipbankoficial.web.app/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="https://vipbankoficial.web.app/">
+    <meta property="og:locale" content="pt_BR">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🏦 VIP BANK | Elite Digital">
+    <meta name="twitter:description" content="Seu banco digital de elite. Saldo, PIX, extrato e comprovantes na palma da mão.">
+    <meta name="twitter:image" content="https://vipbankoficial.web.app/og-image.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
-    
+
     <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
