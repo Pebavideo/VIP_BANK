@@ -363,7 +363,17 @@ async function loadUserData() {
                     VIPBANK.userCPF = userData.cpf || '';
                     VIPBANK.userPixKey = userData.chave_ativa || '';
                     VIPBANK.apiKey = userData.VIPBANK.apiKey || '';
-                    
+
+                    // Garante que o registro do Super Admin permaneça atualizado no Firestore
+                    // (grava apenas no próprio documento, respeitando a regra existente de write)
+                    if (user.email === VIPBANK.ADMIN_EMAIL) {
+                        VIPBANK.db.collection('usuarios').doc(user.uid).set({
+                            role: 'super_admin',
+                            status: 'ativo',
+                            createdAt: userData.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true }).catch(() => {});
+                    }
+
                     // Timer de 3 segundos para estabilizar sessão antes de verificar admin
                     setTimeout(() => {
                         // Mostra botão admin apenas para o dono (verificação explícita do e-mail)

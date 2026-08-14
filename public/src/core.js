@@ -25,6 +25,7 @@ window.VIPBANK = {
 
     // Variáveis globais centralizadas
     ADMIN_EMAIL: 'jjoserobertorocharocha@gmail.com',
+    OWNER_UID: 'Vdyk1Z2neWXNTjcsz9wzZEkQlum2',
     ASAAS_PIX_FEE: 3.99,
     currentUser: null,
     balance: 0.00,
