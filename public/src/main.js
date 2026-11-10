@@ -868,6 +868,74 @@ function updateUI() {
         }
     }
     renderTransactions();
+    atualizarScoreVIP();
+}
+
+// ==========================================
+// SCORE VIP INTERNO (0 a 1000 pontos)
+// Base 300 + até 250 pelo saldo + até 250 pelo volume de depósitos
+// + até 200 pela quantidade de transações confirmadas.
+// Usa dados já carregados do Firestore (usuarios.balance + coleção transacoes).
+// ==========================================
+const SCORE_CONFIG = {
+    base: 300,
+    saldo:      { pontos: 250, referencia: 10000 }, // R$ 10 mil de saldo = pontuação máxima
+    depositos:  { pontos: 250, referencia: 20000 }, // R$ 20 mil depositados = pontuação máxima
+    transacoes: { pontos: 200, referencia: 30 }     // 30 transações = pontuação máxima
+};
+
+// Escala logarítmica: os primeiros reais/transações pesam mais (0 a 1)
+function escalaScore(valor, referencia) {
+    if (!valor || valor <= 0) return 0;
+    return Math.min(Math.log10(valor + 1) / Math.log10(referencia + 1), 1);
+}
+
+function calcularScoreVIP(balance, transactions) {
+    const lista = Array.isArray(transactions) ? transactions : [];
+    // Só conta o que foi efetivado (transações antigas sem status também contam)
+    const confirmadas = lista.filter(t => t && (!t.status || t.status === 'CONFIRMADO'));
+    const valorDe = t => parseFloat(t.valor ?? t.amount ?? 0) || 0;
+    const ehEntrada = t => t.tipo === 'ENTRADA' || t.isCredit === true;
+
+    const volumeDepositos = confirmadas.filter(ehEntrada).reduce((soma, t) => soma + valorDe(t), 0);
+
+    const c = SCORE_CONFIG;
+    const pontos = Math.round(
+        c.base +
+        escalaScore(Math.max(balance || 0, 0), c.saldo.referencia) * c.saldo.pontos +
+        escalaScore(volumeDepositos, c.depositos.referencia) * c.depositos.pontos +
+        escalaScore(confirmadas.length, c.transacoes.referencia) * c.transacoes.pontos
+    );
+    const score = Math.max(0, Math.min(1000, pontos));
+
+    let nivel = 'Bronze';
+    if (score >= 850) nivel = 'Diamante';
+    else if (score >= 700) nivel = 'Ouro';
+    else if (score >= 500) nivel = 'Prata';
+
+    return { score, percentual: Math.round(score / 10), nivel, volumeDepositos, totalTransacoes: confirmadas.length };
+}
+
+function atualizarScoreVIP() {
+    const card = document.getElementById('score-card');
+    if (!card) return;
+
+    const r = calcularScoreVIP(VIPBANK.balance, VIPBANK.transactions);
+    VIPBANK.score = r;
+
+    document.getElementById('score-pontos').innerText = r.score;
+    document.getElementById('score-percentual').innerText = r.percentual;
+    document.getElementById('score-nivel').innerText = r.nivel;
+    document.getElementById('score-bar-fill').style.width = `${r.percentual}%`;
+    card.querySelector('.score-bar')?.setAttribute('aria-valuenow', r.score);
+
+    const dicas = {
+        Bronze: 'Faça depósitos e movimente sua conta para subir de nível.',
+        Prata: 'Bom começo! Mantenha saldo e movimentações frequentes.',
+        Ouro: 'Ótimo! Continue movimentando para chegar ao nível Diamante.',
+        Diamante: 'Parabéns! Você está no nível máximo do VIP BANK.'
+    };
+    document.getElementById('score-dica').innerText = dicas[r.nivel];
 }
 
 function startQRScanner(e) {
@@ -1473,6 +1541,8 @@ window.maskMoney = maskMoney;
 window.toast = toast;
 window.saveKey = saveKey;
 window.copiarComprovante = copiarComprovante;
+window.calcularScoreVIP = calcularScoreVIP;
+window.atualizarScoreVIP = atualizarScoreVIP;
 window.abrirSeletorData = abrirSeletorData;
 window.salvarApiKey = salvarApiKey;
 window.isSuperAdmin = isSuperAdmin;

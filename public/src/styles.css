@@ -65,7 +65,8 @@ body { background-color: var(--bg-color); color: var(--text-primary); font-famil
 }
 .logo-login { font-size: clamp(24px, 8vw, 40px); font-weight: 800; color: var(--text-primary); margin-bottom: 20px; margin-top: 20px; flex-shrink: 0; }
 .logo-login span { color: var(--accent-color); }
-.welcome-text { color: #a0a0a0; font-size: 16px; margin-bottom: 30px; font-weight: 400; flex-shrink: 0; }
+.welcome-text { color: #a0a0a0; font-size: 16px; margin-top: 0; margin-bottom: 30px; font-weight: 400; flex-shrink: 0; text-align: center; padding: 0 16px; line-height: 1.4; }
+h1.logo-login { line-height: 1.2; }
 #login-buttons { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; flex-shrink: 0; }
 .btn-access, .btn-google { display: flex; align-items: center; justify-content: center; width: 90%; max-width: 350px; margin: 12px auto; padding: 18px 0; border-radius: 16px; font-weight: 700; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; transition: all 0.3s ease; box-sizing: border-box; border: none; font-size: 18px; }
 .btn-access { background-color: var(--accent-color); color: #000; display: none; }
@@ -125,6 +126,19 @@ header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-b
 .receipt-btn { width: 100% !important; max-width: none !important; margin: 0 !important; display: flex !important; align-items: center; justify-content: center; gap: 8px; font-size: 14px !important; padding: 14px 10px !important; min-height: 52px; }
 .receipt-btn-share { grid-column: 1 / -1; background: var(--success-color, #00c851) !important; color: #fff !important; font-size: 16px !important; }
 @media (max-width: 360px) { .receipt-actions, .receipt-nav { grid-template-columns: 1fr; } }
+
+/* Card do Score VIP */
+.score-card { background: var(--card-bg); border: 1px solid var(--accent-color); border-radius: 20px; padding: 18px 20px; margin-top: 16px; }
+.score-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+.score-title { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.score-title i { color: var(--accent-color); margin-right: 4px; }
+.score-nivel { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--accent-color); color: #000; white-space: nowrap; }
+.score-value { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+#score-pontos { color: var(--accent-color); }
+.score-pct { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+.score-bar { height: 10px; border-radius: 999px; background: rgba(128, 128, 128, 0.25); overflow: hidden; }
+.score-bar-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #ff5252, #ff9800 50%, #00c851); transition: width 0.6s ease; }
+.score-dica { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
 
 /* Campo de data editável e com ícone de calendário visível */
 .input-date { color-scheme: dark; cursor: pointer; }

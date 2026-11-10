@@ -3,7 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🏦 VIP BANK | Elite Digital</title>
+    <title>VIP BANK | Conta Digital com Pix, Extrato e Comprovantes</title>
+
+    <!-- SEO -->
+    <meta name="description" content="VIP BANK: conta digital para enviar e agendar Pix, pagar com QR Code, acompanhar saldo e extrato e compartilhar comprovantes pelo celular. Abra sua conta grátis.">
+    <meta name="keywords" content="VIP BANK, conta digital, banco digital, Pix, transferência Pix, agendar Pix, pagamento QR Code, extrato online, comprovante Pix, saldo, app financeiro">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="author" content="VIP BANK">
+    <link rel="canonical" href="https://vipbankoficial.web.app/">
+    <link rel="alternate" hreflang="pt-BR" href="https://vipbankoficial.web.app/">
+
+    <!-- Dados estruturados (Google) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "VIP BANK",
+        "url": "https://vipbankoficial.web.app/",
+        "description": "Conta digital para enviar e agendar Pix, pagar com QR Code, acompanhar saldo e extrato e compartilhar comprovantes.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web, Android, iOS",
+        "inLanguage": "pt-BR",
+        "image": "https://vipbankoficial.web.app/og-image.png",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }
+    }
+    </script>
 
     <!-- PWA: instalação e atalho na tela inicial -->
     <link rel="manifest" href="manifest.json">
@@ -21,16 +45,17 @@
     <!-- Open Graph: preview ao compartilhar no WhatsApp/Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="VIP BANK">
-    <meta property="og:title" content="🏦 VIP BANK | Elite Digital">
-    <meta property="og:description" content="Seu banco digital de elite. Saldo, PIX, extrato e comprovantes na palma da mão.">
+    <meta property="og:title" content="VIP BANK | Conta Digital com Pix, Extrato e Comprovantes">
+    <meta property="og:description" content="Envie e agende Pix, pague com QR Code, acompanhe saldo e extrato e compartilhe comprovantes. Tudo na palma da mão.">
+    <meta property="og:image:alt" content="VIP BANK - conta digital com Pix">
     <meta property="og:image" content="https://vipbankoficial.web.app/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://vipbankoficial.web.app/">
     <meta property="og:locale" content="pt_BR">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="🏦 VIP BANK | Elite Digital">
-    <meta name="twitter:description" content="Seu banco digital de elite. Saldo, PIX, extrato e comprovantes na palma da mão.">
+    <meta name="twitter:title" content="VIP BANK | Conta Digital com Pix, Extrato e Comprovantes">
+    <meta name="twitter:description" content="Envie e agende Pix, pague com QR Code, acompanhe saldo e extrato e compartilhe comprovantes. Tudo na palma da mão.">
     <meta name="twitter:image" content="https://vipbankoficial.web.app/og-image.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -44,13 +69,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
 
-    <link rel="stylesheet" href="src/styles.css?v=20261110d">
+    <link rel="stylesheet" href="src/styles.css?v=20261110f">
 </head>
 <body>
 
     <div id="login-screen">
-        <div class="logo-login">🏦 VIP <span>BANK</span></div>
-        <div class="welcome-text">Bem-vindo ao futuro do seu dinheiro.</div>
+        <h1 class="logo-login">🏦 VIP <span>BANK</span></h1>
+        <h2 class="welcome-text">Conta digital com Pix, extrato e comprovantes na palma da mão.</h2>
         
         <div id="login-buttons">
             <button id="btn-entrar-google" class="btn-confirm" style="margin-bottom: 15px; background: var(--accent-color); color: black; border: 5px solid red !important; pointer-events: auto !important; position: relative !important; z-index: 999999 !important;">ENTRAR NA MINHA CONTA</button>
@@ -180,6 +205,19 @@
                     <span id="txt-saldo">R$ 5.000,00</span>
                     <i id="balance-eye" class="fas fa-eye" style="margin-left: 10px; cursor: pointer; color: var(--text-secondary); font-size: 16px;" onclick="window.toggleBalanceVisibility()"></i>
                 </div>
+            </div>
+
+            <!-- Score VIP interno (calculado em main.js > calcularScoreVIP) -->
+            <div id="score-card" class="score-card" aria-live="polite">
+                <div class="score-header">
+                    <span class="score-title"><i class="fas fa-star"></i> Seu Score VIP</span>
+                    <span id="score-nivel" class="score-nivel">-</span>
+                </div>
+                <div class="score-value"><span id="score-pontos">0</span> pontos <span class="score-pct">(<span id="score-percentual">0</span>%)</span></div>
+                <div class="score-bar" role="progressbar" aria-valuemin="0" aria-valuemax="1000" aria-label="Score VIP">
+                    <div id="score-bar-fill" class="score-bar-fill"></div>
+                </div>
+                <div id="score-dica" class="score-dica">Movimente sua conta para aumentar seu score.</div>
             </div>
 
             <div style="text-align: center; margin: 20px 0;">
@@ -527,11 +565,11 @@
     <div id="error-toast"></div>
 
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
-    <script src="src/core.js?v=20261110d"></script>
+    <script src="src/core.js?v=20261110f"></script>
     
     <!-- Ordem correta: core.js → auth/index.js → main.js → api/asaas.js (usa funções das outras) -->
-    <script src="src/auth/index.js?v=20261110d"></script>
-    <script src="src/main.js?v=20261110d"></script>
-    <script src="src/api/asaas.js?v=20261110d"></script>
+    <script src="src/auth/index.js?v=20261110f"></script>
+    <script src="src/main.js?v=20261110f"></script>
+    <script src="src/api/asaas.js?v=20261110f"></script>
 </body>
 </html>
