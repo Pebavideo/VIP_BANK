@@ -15,6 +15,16 @@
       "README.md",
       "firestore.rules"
     ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|css|json)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+      },
+      {
+        "source": "/",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+      }
+    ],
     "rewrites": [
       {
         "source": "**",

@@ -44,7 +44,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
 
-    <link rel="stylesheet" href="src/styles.css">
+    <link rel="stylesheet" href="src/styles.css?v=20261110c">
 </head>
 <body>
 
@@ -195,7 +195,7 @@
                 <div class="btn-action" onclick="window.showModal('modal-register-pix')" ontouchstart="window.showModal('modal-register-pix')">
                     <i class="fas fa-key"></i><span>Minhas Chaves</span>
                 </div>
-                <div class="btn-action" onclick="window.startQRScanner()" ontouchstart="window.startQRScanner()">
+                <div class="btn-action" onclick="window.startQRScanner(event)" ontouchstart="window.startQRScanner(event)">
                     <i class="fas fa-qrcode"></i><span>Pagar com Leitor</span>
                 </div>
                 <div class="btn-action" onclick="window.showModal('modal-deposit')" ontouchstart="window.showModal('modal-deposit')">
@@ -521,11 +521,11 @@
     <div id="error-toast"></div>
 
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
-    <script src="src/core.js"></script>
+    <script src="src/core.js?v=20261110c"></script>
     
     <!-- Ordem correta: core.js → auth/index.js → main.js → api/asaas.js (usa funções das outras) -->
-    <script src="src/auth/index.js"></script>
-    <script src="src/main.js"></script>
-    <script src="src/api/asaas.js"></script>
+    <script src="src/auth/index.js?v=20261110c"></script>
+    <script src="src/main.js?v=20261110c"></script>
+    <script src="src/api/asaas.js?v=20261110c"></script>
 </body>
 </html>

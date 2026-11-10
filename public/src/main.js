@@ -296,6 +296,7 @@ function showModal(id) {
             const sec = document.getElementById(secId);
             if (sec) sec.style.display = admin ? 'block' : 'none';
         });
+        if (admin) carregarStatusApiKey();
     }
     
     if (id === 'modal-register-pix') {
@@ -330,7 +331,10 @@ function closeModals() {
 
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     document.getElementById('modal-overlay').style.display = 'none';
-    
+
+    // Nunca deixa a câmera ligada com o leitor fechado
+    if (VIPBANK.qrScanner) pararCameraQR();
+
     // Resetar modal de depósito
     resetarModalDeposito();
     
@@ -803,51 +807,74 @@ function updateUI() {
     renderTransactions();
 }
 
-function startQRScanner() {
+function startQRScanner(e) {
+    // onclick + ontouchstart disparam juntos no celular: evita abrir 2 câmeras
+    if (e && e.cancelable) e.preventDefault();
+    if (VIPBANK.qrScanner) return;
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast('Seu navegador não suporta acesso à câmera', 'erro');
+        toast('Seu navegador não suporta acesso à câmera', true);
         return;
     }
-    
+
     showModal('modal-qr-scanner');
-    
-    VIPBANK.qrScanner = new Html5Qrcode("qr-reader");
-    
-    const config = { 
-        fps: 10, 
+
+    const scanner = new Html5Qrcode("qr-reader");
+    VIPBANK.qrScanner = scanner;
+
+    const config = {
+        fps: 10,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0
     };
-    
-    VIPBANK.qrScanner.start(
+
+    // Guarda a promessa de início para que o stop espere a câmera abrir
+    VIPBANK.qrScannerStarting = scanner.start(
         { facingMode: "environment" },
         config,
-        (decodedText, decodedResult) => {
+        (decodedText) => {
             processQRCode(decodedText);
         },
-        (errorMessage) => {
-        }
+        () => {}
     ).catch((err) => {
-
-        
+        console.error('Erro ao iniciar câmera:', err);
+        toast('Não foi possível acessar a câmera. Verifique a permissão.', true);
         stopQRScanner();
     });
 }
 
-function stopQRScanner() {
-    if (VIPBANK.qrScanner) {
-        VIPBANK.qrScanner.stop().then(() => {
-            VIPBANK.qrScanner.clear();
-            VIPBANK.qrScanner = null;
-        }).catch((err) => {
+// Para a câmera e libera o elemento do leitor (seguro chamar várias vezes)
+async function pararCameraQR() {
+    const scanner = VIPBANK.qrScanner;
+    const starting = VIPBANK.qrScannerStarting;
+    VIPBANK.qrScanner = null;
+    VIPBANK.qrScannerStarting = null;
+    if (!scanner) return;
 
-        });
+    try { if (starting) await starting; } catch (_) {}
+    try {
+        if (scanner.isScanning) await scanner.stop();
+    } catch (err) {
+        console.warn('Erro ao parar scanner:', err);
     }
-    
-    document.getElementById('modal-qr-scanner').style.display = 'none';
-    document.getElementById('modal-overlay').style.display = 'none';
-    closeModals();
+    try { scanner.clear(); } catch (_) {}
+
+    // Garantia extra: desliga qualquer stream de vídeo que tenha ficado no leitor
+    document.querySelectorAll('#qr-reader video').forEach(v => {
+        if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+        v.srcObject = null;
+    });
 }
+
+function stopQRScanner() {
+    const modal = document.getElementById('modal-qr-scanner');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('modal-overlay').style.display = 'none';
+    return pararCameraQR();
+}
+
+// Alias pedido: fecha o leitor de QR
+const fecharLeitorQR = stopQRScanner;
 
 function processQRCode(qrData) {
     try {
@@ -912,13 +939,35 @@ function confirmQRPayment() {
 }
 
 function closeQRPayment() {
-    document.getElementById('modal-qr-payment').style.display = 'none';
+    pararCameraQR();
+    const modal = document.getElementById('modal-qr-payment');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('modal-overlay').style.display = 'none';
     VIPBANK.qrPaymentData = null;
 }
 
 // Verificação estrita: somente o e-mail do Super Admin
 function isSuperAdmin() {
     return !!(VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL);
+}
+
+// Mostra no placeholder se já existe chave salva em admin/configuracoes (sem expor a chave)
+async function carregarStatusApiKey() {
+    const input = document.getElementById('api-key-input');
+    if (!input || !isSuperAdmin()) return;
+    try {
+        const doc = await VIPBANK.db.collection('admin').doc('configuracoes').get();
+        const chave = doc.exists ? doc.data().asaas_api_key : '';
+        input.placeholder = chave
+            ? `Chave salva (termina em ...${String(chave).slice(-4)}). Cole uma nova para trocar`
+            : 'Cole sua chave da API aqui';
+    } catch (err) {
+        console.warn('Não foi possível ler admin/configuracoes:', err.code || err);
+    }
+}
+
+async function salvarApiKey() {
+    return saveKey();
 }
 
 async function saveKey() {
@@ -1339,6 +1388,9 @@ window.showModal = showModal;
 window.startQRScanner = startQRScanner;
 window.closeModals = closeModals;
 window.closeQRPayment = closeQRPayment; // Add other modal functions too
+window.stopQRScanner = stopQRScanner;
+window.fecharLeitorQR = fecharLeitorQR;
+window.confirmQRPayment = confirmQRPayment;
 window.toggleBalanceVisibility = toggleBalanceVisibility;
 window.maskDocumento = maskDocumento;
 window.maskCPF = maskCPF;
@@ -1357,7 +1409,7 @@ window.finalizePayment = finalizePayment;
 window.maskMoney = maskMoney;
 window.toast = toast;
 window.saveKey = saveKey;
-window.salvarApiKey = saveKey;
+window.salvarApiKey = salvarApiKey;
 window.isSuperAdmin = isSuperAdmin;
 window.renderTransactions = renderTransactions;
 window.exibirComprovante = exibirComprovante;

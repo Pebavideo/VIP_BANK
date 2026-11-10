@@ -1046,6 +1046,7 @@ window.iniciarLogin = iniciarLogin;
 window.abrirConta = abrirConta;
 window.signInWithGoogle = signInWithGoogle;
 window.entrarComCredenciais = entrarComCredenciais;
+window.handleForgotPassword = handleForgotPassword;
 window.entrar = entrar;
 window.sairComSeguranca = sairComSeguranca;
 window.showCreateAccountForm = showCreateAccountForm;
