@@ -289,16 +289,13 @@ function showModal(id) {
     if (overlay) overlay.style.display = 'block';
     if (modal) modal.style.display = 'block';
     
-    // Adicionar lista de clientes para admin no modal config
+    // Seções exclusivas do Super Admin no modal de configurações
     if (id === 'modal-config') {
-        const adminDashboard = document.getElementById('admin-dashboard-container');
-        if (adminDashboard) {
-            if (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
-                adminDashboard.style.display = 'block';
-            } else {
-                adminDashboard.style.display = 'none';
-            }
-        }
+        const admin = isSuperAdmin();
+        ['admin-api-key-section', 'admin-dashboard-container'].forEach(secId => {
+            const sec = document.getElementById(secId);
+            if (sec) sec.style.display = admin ? 'block' : 'none';
+        });
     }
     
     if (id === 'modal-register-pix') {
@@ -340,7 +337,7 @@ function closeModals() {
     // Limpa campos dos modais ao fechar
     const fieldsToClear = [
         'transfer-key', 'transfer-value', 'transfer-date', 'transfer-description',
-        'new-pix-key', 'asaas-key', 'security-password', 'deposit-value',
+        'new-pix-key', 'api-key-input','security-password', 'deposit-value',
         'manual-login-id', 'manual-login-pass'
     ];
     
@@ -919,28 +916,37 @@ function closeQRPayment() {
     VIPBANK.qrPaymentData = null;
 }
 
-async function saveKey() { 
-    if (!VIPBANK.isAdmin) {
-        toast('Acesso negado! Apenas administradores podem alterar configurações.', 'erro');
+// Verificação estrita: somente o e-mail do Super Admin
+function isSuperAdmin() {
+    return !!(VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL);
+}
+
+async function saveKey() {
+    if (!isSuperAdmin()) {
+        toast('Acesso negado! Apenas administradores podem alterar configurações.', true);
         return;
     }
-    const newApiKey = document.getElementById('asaas-key').value; 
-    
-    try {
-        // Salvar via Cloud Function
-        const atualizarConfig = VIPBANK.functions.httpsCallable('atualizarConfiguracoesAdmin');
-        await atualizarConfig({
-            configs: {
-                asaas_api_key: newApiKey
-            }
-        });
-        
-        VIPBANK.apiKey = newApiKey;
-        toast('Configuração salva com sucesso!', 'sucesso'); 
-        closeModals(); 
-    } catch (error) {
+    const input = document.getElementById('api-key-input');
+    const newApiKey = input ? input.value.trim() : '';
+    if (!newApiKey) {
+        toast('Digite a chave de API do Asaas.', true);
+        return;
+    }
 
-        toast('Erro ao salvar configuração.', 'erro');
+    try {
+        // Grava direto em admin/configuracoes (firestore.rules só permite o e-mail do admin);
+        // é o mesmo documento que a Cloud Function lê (asaas_api_key).
+        await VIPBANK.db.collection('admin').doc('configuracoes').set({
+            asaas_api_key: newApiKey,
+            atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        VIPBANK.apiKey = newApiKey;
+        toast('Chave de API salva com sucesso!', false);
+        closeModals();
+    } catch (error) {
+        console.error('Erro ao salvar chave de API:', error);
+        toast('Erro ao salvar chave de API.', true);
     }
 }
 
@@ -1350,6 +1356,9 @@ window.closeSecurityModal = closeSecurityModal;
 window.finalizePayment = finalizePayment;
 window.maskMoney = maskMoney;
 window.toast = toast;
+window.saveKey = saveKey;
+window.salvarApiKey = saveKey;
+window.isSuperAdmin = isSuperAdmin;
 window.renderTransactions = renderTransactions;
 window.exibirComprovante = exibirComprovante;
 window.showReceipt = showReceipt;

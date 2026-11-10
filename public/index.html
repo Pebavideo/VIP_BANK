@@ -298,7 +298,16 @@
     <div id="modal-config" class="modal">
         <h3>Configurações</h3><br>
         
-        <div id="admin-dashboard-container" style="padding: 10px; border-bottom: 1px solid #ccc;">
+        <!-- Visível apenas para o Super Admin (controlado em showModal / main.js) -->
+        <div id="admin-api-key-section" style="display: none;">
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label class="form-label" style="color: var(--text-secondary); font-size: 14px; display: block; margin-bottom: 8px;">Chave API / Asaas</label>
+                <input type="text" id="api-key-input" class="input-field" placeholder="Cole sua chave da API aqui">
+                <button class="btn-confirm" onclick="window.salvarApiKey()" style="margin-top: 10px;">SALVAR CHAVE</button>
+            </div>
+        </div>
+
+        <div id="admin-dashboard-container" style="display: none; padding: 10px; border-bottom: 1px solid #ccc;">
             <h4 style="margin: 0 0 10px 0;">Painel Admin</h4>
             <a href="https://console.firebase.google.com/project/vip-bank-f183b/overview" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10px 20px; background: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
                 <i class="fas fa-external-link-alt"></i> Acessar Console Firebase
