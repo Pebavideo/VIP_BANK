@@ -44,7 +44,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
 
-    <link rel="stylesheet" href="src/styles.css?v=20261110c">
+    <link rel="stylesheet" href="src/styles.css?v=20261110d">
 </head>
 <body>
 
@@ -263,7 +263,8 @@
         </p>
         <input type="text" id="transfer-key" class="input-field" placeholder="Chave PIX (CPF, E-mail, etc)" inputmode="tel" oninput="window.smartPixMask(this)" autocomplete="off">
         <input type="text" id="transfer-value" class="input-field" placeholder="R$ 0,00" oninput="window.maskMoney(this)" autocomplete="off">
-        <input type="date" id="transfer-date" class="input-field" placeholder="Quando deseja transferir?" autocomplete="off">
+        <label class="form-label" for="transfer-date" style="display: block; color: var(--text-secondary); font-size: 13px; margin-bottom: 6px;">📅 Data da transferência (hoje ou agendar)</label>
+        <input type="date" id="transfer-date" class="input-field input-date" autocomplete="off" onclick="window.abrirSeletorData(this)">
         <input type="text" id="transfer-description" class="input-field" placeholder="Mensagem (opcional)" maxlength="40" autocomplete="off">
         <button id="btn-transfer" class="btn-confirm" onclick="window.handleTransferClick()">CONFIRMAR ENVIO</button>
         <button class="btn-cancel" onclick="window.closeModals()">CANCELAR</button>
@@ -502,16 +503,21 @@
             </div>
             
             <div class="receipt-actions">
-                <button class="btn-confirm" onclick="window.shareReceipt()">
+                <button type="button" class="btn-confirm receipt-btn receipt-btn-share" onclick="window.shareReceipt()">
                     <i class="fas fa-share-alt"></i> COMPARTILHAR
                 </button>
-                <button class="btn-confirm" onclick="window.printReceipt()">
-                    <i class="fas fa-file-pdf"></i> SALVAR PDF
+                <button type="button" class="btn-confirm receipt-btn" onclick="window.copiarComprovante()">
+                    <i class="fas fa-copy"></i> COPIAR TEXTO
                 </button>
-                <button class="btn-confirm" onclick="window.newTransferFromReceipt()">
+                <button type="button" class="btn-confirm receipt-btn" onclick="window.printReceipt()">
+                    <i class="fas fa-download"></i> BAIXAR / IMPRIMIR
+                </button>
+            </div>
+            <div class="receipt-nav">
+                <button type="button" class="btn-outline receipt-btn" onclick="window.newTransferFromReceipt()">
                     <i class="fas fa-paper-plane"></i> Nova Transferência
                 </button>
-                <button class="btn-cancel" onclick="window.closeReceiptAndGoHome()">
+                <button type="button" class="btn-cancel receipt-btn" onclick="window.closeReceiptAndGoHome()">
                     <i class="fas fa-home"></i> Ir para o Início
                 </button>
             </div>
@@ -521,11 +527,11 @@
     <div id="error-toast"></div>
 
     <!-- ARQUIVO CENTRAL (CARREGAR PRIMEIRO!) -->
-    <script src="src/core.js?v=20261110c"></script>
+    <script src="src/core.js?v=20261110d"></script>
     
     <!-- Ordem correta: core.js → auth/index.js → main.js → api/asaas.js (usa funções das outras) -->
-    <script src="src/auth/index.js?v=20261110c"></script>
-    <script src="src/main.js?v=20261110c"></script>
-    <script src="src/api/asaas.js?v=20261110c"></script>
+    <script src="src/auth/index.js?v=20261110d"></script>
+    <script src="src/main.js?v=20261110d"></script>
+    <script src="src/api/asaas.js?v=20261110d"></script>
 </body>
 </html>

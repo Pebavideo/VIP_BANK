@@ -119,8 +119,16 @@ header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-b
 .trans-details { display: flex; flex-direction: column; }
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
-.receipt-actions { display: flex; gap: 10px; margin-top: 20px; }
-.receipt-actions .btn-confirm { flex: 1; }
+/* Botões do comprovante: grade clara, sempre visíveis */
+.receipt-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.receipt-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.receipt-btn { width: 100% !important; max-width: none !important; margin: 0 !important; display: flex !important; align-items: center; justify-content: center; gap: 8px; font-size: 14px !important; padding: 14px 10px !important; min-height: 52px; }
+.receipt-btn-share { grid-column: 1 / -1; background: var(--success-color, #00c851) !important; color: #fff !important; font-size: 16px !important; }
+@media (max-width: 360px) { .receipt-actions, .receipt-nav { grid-template-columns: 1fr; } }
+
+/* Campo de data editável e com ícone de calendário visível */
+.input-date { color-scheme: dark; cursor: pointer; }
+.input-date::-webkit-calendar-picker-indicator { cursor: pointer; filter: invert(0.6) sepia(1) saturate(5) hue-rotate(5deg); opacity: 1; width: 22px; height: 22px; }
 
 #btn-finalizar-cadastro {
     width: 100% !important;

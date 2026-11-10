@@ -276,6 +276,23 @@ function toggleAdminMode() {
     }
 }
 
+// Data de hoje no fuso local, formato AAAA-MM-DD (usado pelo input type="date")
+function dataLocalISO(d = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// AAAA-MM-DD -> DD/MM/AAAA
+function formatarDataBR(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || '');
+}
+
+// Abre o calendário nativo ao clicar em qualquer parte do campo
+function abrirSeletorData(input) {
+    try { if (input && input.showPicker) input.showPicker(); } catch (_) { /* navegador sem suporte: segue edição normal */ }
+}
+
 function showModal(id) {
     if (id === 'modal-config' && VIPBANK.currentUser && VIPBANK.currentUser.email !== ADMIN_EMAIL) {
         toast('Acesso negado! Apenas administradores podem acessar configurações.', 'erro');
@@ -315,9 +332,15 @@ function showModal(id) {
     }
     
     if (id === 'modal-transfer-pix') {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('transfer-date').value = today;
-        document.getElementById('transfer-date').setAttribute('min', today);
+        // Data LOCAL (toISOString usa UTC e, após 21h no Brasil, já virava "amanhã",
+        // bloqueando o dia de hoje). Sugere hoje, mas o usuário pode escolher qualquer data futura.
+        const dateInput = document.getElementById('transfer-date');
+        const today = dataLocalISO();
+        dateInput.readOnly = false;
+        dateInput.disabled = false;
+        dateInput.removeAttribute('max');
+        dateInput.setAttribute('min', today);
+        if (!dateInput.value || dateInput.value < today) dateInput.value = today;
     }
     
     if (id === 'modal-full-extract') {
@@ -430,8 +453,13 @@ function openSecurityModal(valor, chave) {
         return;
     }
     
-    const data = document.getElementById('transfer-date').value;
+    const data = document.getElementById('transfer-date').value || dataLocalISO();
     const descricao = document.getElementById('transfer-description').value;
+
+    if (data < dataLocalISO()) {
+        toast('Escolha a data de hoje ou uma data futura.', true);
+        return;
+    }
     
     const cpfCnpjRegex = /^[0-9]{11,14}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -488,7 +516,11 @@ async function finalizePayment() {
         return;
     }
 
-    const totalAmountToDeduct = VIPBANK.pendingTransfer.valor + (VIPBANK.pendingTransfer.fee || 0);
+    // Cópia local: closeSecurityModal() zera VIPBANK.pendingTransfer, e o comprovante
+    // precisa desses dados depois (antes isso quebrava e o comprovante nunca abria).
+    const pending = { ...VIPBANK.pendingTransfer };
+
+    const totalAmountToDeduct = pending.valor + (pending.fee || 0);
     if (VIPBANK.balance < totalAmountToDeduct) {
         toast('Saldo insuficiente!', 'erro');
         closeSecurityModal();
@@ -501,9 +533,9 @@ async function finalizePayment() {
     try {
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        const transactionType = VIPBANK.pendingTransfer.isQRPayment ? 'Pagamento QR Code' : 'Transferência PIX';
-        const beneficiary = VIPBANK.pendingTransfer.isQRPayment ? VIPBANK.pendingTransfer.beneficiary : VIPBANK.pendingTransfer.chave;
-        const amount = VIPBANK.pendingTransfer.isQRPayment ? VIPBANK.pendingTransfer.originalAmount : VIPBANK.pendingTransfer.valor;
+        const transactionType = pending.isQRPayment ? 'Pagamento QR Code' : 'Transferência PIX';
+        const beneficiary = pending.isQRPayment ? pending.beneficiary : pending.chave;
+        const amount = pending.isQRPayment ? pending.originalAmount : pending.valor;
 
         // Gerar authCode único
         const authCode = gerarAuthCode();
@@ -526,10 +558,10 @@ async function finalizePayment() {
             type: transactionType,
             amount: amount,
             dest: beneficiary,
-            date: VIPBANK.pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            description: VIPBANK.pendingTransfer.descricao || '',
+            date: pending.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            description: pending.descricao || '',
             isCredit: false,
-            fee: VIPBANK.pendingTransfer.fee || 0,
+            fee: pending.fee || 0,
             usuarioId: VIPBANK.currentUser.uid
         };
 
@@ -545,13 +577,13 @@ async function finalizePayment() {
         // Adiciona a transação à lista local
         VIPBANK.transactions.unshift(newTransaction);
         
-        if (VIPBANK.pendingTransfer.fee && VIPBANK.pendingTransfer.fee > 0) {
+        if (pending.fee && pending.fee > 0) {
             // Grava taxa no cofre central via Cloud Function (apenas admin)
             try {
                 const atualizarConfig = VIPBANK.functions.httpsCallable('atualizarConfiguracoesAdmin');
                 await atualizarConfig({
                     configs: {
-                        lucro_total: firebase.firestore.FieldValue.increment(VIPBANK.pendingTransfer.fee)
+                        lucro_total: firebase.firestore.FieldValue.increment(pending.fee)
                     }
                 });
                 await updateProfitDisplay();
@@ -569,13 +601,19 @@ async function finalizePayment() {
         closeSecurityModal();
         document.getElementById('modal-transfer-pix').style.display = 'none';
         
-        const transactionDate = VIPBANK.pendingTransfer.data || new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
-        
-        // Show receipt immediately
-        showReceipt(transactionType, amount, beneficiary, transactionDate, VIPBANK.pendingTransfer.description, authCode);
-        toast('Transferência concluída com sucesso!', 'sucesso');
-        
+        const agora = new Date();
+        const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const agendado = pending.data && pending.data > dataLocalISO(agora);
+        const transactionDate = agendado
+            ? `Agendado para ${formatarDataBR(pending.data)}`
+            : `${formatarDataBR(pending.data || dataLocalISO(agora))} às ${hora}`;
+
+        // Exibe o comprovante com os botões de compartilhar/copiar/baixar
+        showReceipt(transactionType, amount, beneficiary, transactionDate, pending.descricao, authCode);
+        toast(agendado ? 'Pix agendado com sucesso!' : 'Transferência concluída com sucesso!', false);
+
     } catch (e) {
+        console.error('Erro ao finalizar Pix:', e);
         toast('Erro no servidor. Tente mais tarde.', 'erro');
     } finally {
         btn.disabled = false;
@@ -596,6 +634,8 @@ function maskMoney(i) {
 }
 
 function toast(msg, err = true) {
+    // Aceita true/false ou strings: "sucesso"/"info" = verde, "erro" ou true = vermelho
+    if (typeof err === "string") err = (err === "erro");
     const t = document.getElementById('error-toast');
     t.innerText = msg;
     t.style.background = err ? "var(--danger-color)" : "var(--success-color)";
@@ -742,13 +782,36 @@ function closeReceiptAndGoHome() {
     // No dashboard principal já está visível, só precisa de fechar os modais
 }
 
+// Texto completo do comprovante (usado em Compartilhar e Copiar)
+function textoComprovante() {
+    const v = id => (document.getElementById(id)?.innerText || '-').trim();
+    return [
+        '🏦 VIP BANK | COMPROVANTE',
+        `Tipo: ${v('receipt-type')}`,
+        `Valor: ${v('receipt-amount')}`,
+        `Destino: ${v('receipt-dest')}`,
+        `Descrição: ${v('receipt-description')}`,
+        `Data: ${v('receipt-date')}`,
+        `Autenticação: ${v('receipt-auth')}`
+    ].join('\n');
+}
+
 function shareReceipt() {
-    const text = `🏦 VIP BANK | COMPROVANTE\nValor: ${document.getElementById('receipt-amount').innerText}\nDestino: ${document.getElementById('receipt-dest').innerText}\nAutenticação: ${document.getElementById('receipt-auth').innerText}`;
+    const text = textoComprovante();
     if (navigator.share) {
-        navigator.share({ title: 'Comprovante VIP', text: text }).catch(() => copyReceiptText(text));
+        navigator.share({ title: 'Comprovante VIP BANK', text: text }).catch(err => {
+            // Usuário cancelou o menu de compartilhar: não faz nada
+            if (err && err.name === 'AbortError') return;
+            copyReceiptText(text);
+        });
     } else {
+        // Computador sem menu de compartilhar: copia o texto para colar no WhatsApp/e-mail
         copyReceiptText(text);
     }
+}
+
+function copiarComprovante() {
+    copyReceiptText(textoComprovante());
 }
 
 function copyReceiptText(text) {
@@ -1409,6 +1472,8 @@ window.finalizePayment = finalizePayment;
 window.maskMoney = maskMoney;
 window.toast = toast;
 window.saveKey = saveKey;
+window.copiarComprovante = copiarComprovante;
+window.abrirSeletorData = abrirSeletorData;
 window.salvarApiKey = salvarApiKey;
 window.isSuperAdmin = isSuperAdmin;
 window.renderTransactions = renderTransactions;
