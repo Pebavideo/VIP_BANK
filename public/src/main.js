@@ -291,46 +291,12 @@ function showModal(id) {
     
     // Adicionar lista de clientes para admin no modal config
     if (id === 'modal-config') {
-        console.log('Tentando carregar lista de clientes');
-        console.log('Current user email:', VIPBANK.currentUser?.email);
-        console.log('Admin email:', ADMIN_EMAIL);
-        
         const adminDashboard = document.getElementById('admin-dashboard-container');
         if (adminDashboard) {
             if (VIPBANK.currentUser && VIPBANK.currentUser.email === ADMIN_EMAIL) {
                 adminDashboard.style.display = 'block';
-                
-                const container = document.getElementById('contagem-clientes');
-                if (container) {
-                    container.innerHTML = 'Painel Admin (Offline - Verifique plano Firebase)';
-                    
-                    // Chamar Cloud Function segura (desativada temporariamente)
-                    // const listarTodosUsuarios = VIPBANK.functions.httpsCallable('listarTodosUsuarios');
-                    // listarTodosUsuarios().then(result => {
-                    //     container.innerHTML = '';
-                    //     const usuarios = result.data.usuarios;
-                        
-                    //     if (usuarios.length === 0) {
-                    //         container.innerHTML = 'Nenhum cliente.';
-                    //         return;
-                    //     }
-                        
-                    //     usuarios.forEach(nome => {
-                    //         const div = document.createElement('div');
-                    //         div.innerHTML = `- ${nome}`;
-                    //         div.style.marginBottom = '5px';
-                    //         container.appendChild(div);
-                    //     });
-                        
-                    //     console.log('Clientes carregados:', usuarios.length);
-                    // }).catch(err => {
-                    //     console.error('Erro:', err);
-                    //     container.innerHTML = 'Erro ao carregar.';
-                    // });
-                }
             } else {
                 adminDashboard.style.display = 'none';
-                console.log('Não mostrando lista: currentUser:', !!VIPBANK.currentUser, 'email match:', VIPBANK.currentUser?.email === ADMIN_EMAIL);
             }
         }
     }

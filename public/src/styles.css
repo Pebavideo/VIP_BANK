@@ -138,7 +138,9 @@ header { position: sticky; top: 0; padding: 15px 20px; background: var(--glass-b
 .receipt-amount { font-size: 24px; font-weight: 700; color: var(--accent-color); }
 @media print { body * { visibility: hidden; } .modal-receipt-content, .modal-receipt-content * { visibility: visible; } .modal-receipt-content { position: absolute; left: 0; top: 0; width: 100%; } }
 
-#error-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 12px; z-index: 4000; font-weight: 600; }
+#error-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 12px; z-index: 100000; font-weight: 600; }
+/* Mensagem de erro inline do modal de login */
+.login-error { display: none; color: var(--danger-color); font-size: 14px; font-weight: 600; text-align: center; margin: 4px 0 8px; }
 
 /* Garantia de clique nos botões de login */
 #btn-entrar-google,

@@ -225,7 +225,8 @@
         <input type="text" id="manual-login-id" class="input-field" placeholder="Digite seu E-mail ou CPF" autocomplete="off">
         <label class="form-label">Senha de Acesso</label>
         <input type="password" id="manual-login-pass" class="input-field" placeholder="Digite sua senha" autocomplete="new-password">
-        <button id="btn-confirm-login" class="btn-confirm" onclick="window.entrarComCredenciais()">ENTRAR NA CONTA</button>
+        <span id="login-error" class="login-error" role="alert" aria-live="assertive"></span>
+        <button id="btn-confirm-login" type="button" class="btn-confirm">ENTRAR NA CONTA</button>
         <div style="text-align: center; margin-top: 10px; margin-bottom: 10px;">
             <span onclick="window.handleForgotPassword()" style="font-size: 12px; color: var(--text-secondary); cursor: pointer; text-decoration: underline;">Esqueci minha senha</span>
         </div>
@@ -298,8 +299,10 @@
         <h3>Configurações</h3><br>
         
         <div id="admin-dashboard-container" style="padding: 10px; border-bottom: 1px solid #ccc;">
-            <h4 style="margin: 0 0 10px 0;">Clientes:</h4>
-            <div id="contagem-clientes">Buscando clientes...</div>
+            <h4 style="margin: 0 0 10px 0;">Painel Admin</h4>
+            <a href="https://console.firebase.google.com/project/vip-bank-f183b/overview" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10px 20px; background: var(--accent-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                <i class="fas fa-external-link-alt"></i> Acessar Console Firebase
+            </a>
         </div>
         
         <button class="btn-confirm" onclick="window.encerrarContaSegura()" style="background: var(--danger-color); color: white; margin-top: 40px; margin-bottom: 10px;">

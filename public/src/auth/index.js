@@ -128,22 +128,49 @@ async function encerrarContaVIP() {
             toast('Usuário não autenticado.', 'erro');
             return;
         }
+        const uid = user.uid;
 
-        // Step 2: Delete via Cloud Function
-        const deletarConta = VIPBANK.functions.httpsCallable('deletarContaUsuario');
-        await deletarConta();
+        console.log('🔄 Iniciando exclusão de conta para UID:', uid);
 
-        // Step 3: Clear local storage
+        // Step 2: Delete all user transactions first
+        console.log('🔄 Deletando transações do usuário...');
+        const transacoesSnapshot = await VIPBANK.db.collection('transacoes')
+            .where('usuarioId', '==', uid)
+            .get();
+        
+        if (!transacoesSnapshot.empty) {
+            const deletePromises = transacoesSnapshot.docs.map(doc => doc.ref.delete());
+            await Promise.all(deletePromises);
+            console.log('✅ Transações deletadas com sucesso!');
+        }
+
+        // Step 3: Delete user document from Firestore
+        console.log('🔄 Deletando documento do usuário no Firestore...');
+        await VIPBANK.db.collection('usuarios').doc(uid).delete();
+        console.log('✅ Documento do usuário deletado!');
+
+        // Step 4: Delete user from Firebase Auth
+        console.log('🔄 Deletando usuário do Firebase Auth...');
+        await user.delete();
+        console.log('✅ Usuário deletado do Auth!');
+
+        // Step 5: Clear local storage
         localStorage.clear();
         sessionStorage.clear();
+        console.log('✅ Cache limpo!');
 
-        // Step 4: Show success and refresh to login screen
+        // Step 6: Show success and refresh to login screen
         toast('Conta encerrada com sucesso. Até logo!', 'sucesso');
         setTimeout(() => {
             location.reload();
         }, 2000);
     } catch (error) {
-
+        console.error('❌ Erro ao encerrar conta:', error);
+        console.error('Detalhes do erro:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+        });
         toast('Ocorreu um erro. Tente novamente mais tarde.', 'erro');
     }
 }
@@ -576,22 +603,97 @@ async function handleForgotPassword() {
 // Inicializa lucro acumulado do banco (pode ser carregado do Firestore se necessário)
 let bankProfit = 0;
 
-async function entrarComCredenciais() {
-    const loginId = document.getElementById('manual-login-id').value.trim();
-    const loginPass = document.getElementById('manual-login-pass').value.trim();
+// Exibe (ou limpa) a mensagem de erro inline do modal de login + toast
+function mostrarErroLogin(msg) {
+    const span = document.getElementById('login-error');
+    if (span) {
+        span.innerText = msg || '';
+        span.style.display = msg ? 'block' : 'none';
+    }
+    if (msg) toast(msg, true);
+}
 
-    const user = VIPBANK.auth.currentUser;
-    if (!user) {
-        toast('Sessão expirada. Faça login novamente.', 'erro');
-        VIPBANK.auth.signOut();
+// Traduz códigos de erro do Firebase Auth para mensagens amigáveis
+function mensagemErroAuth(error) {
+    switch (error && error.code) {
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+        case 'auth/invalid-login-credentials':
+        case 'auth/user-mismatch':
+            return 'E-mail ou senha incorretos. Tente novamente.';
+        case 'auth/user-not-found':
+            return 'Nenhuma conta encontrada com este e-mail.';
+        case 'auth/invalid-email':
+            return 'E-mail inválido.';
+        case 'auth/too-many-requests':
+            return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+        case 'auth/network-request-failed':
+            return 'Sem conexão com a internet. Verifique sua rede.';
+        case 'auth/user-disabled':
+            return 'Esta conta foi desativada.';
+        default:
+            return 'Não foi possível entrar. Tente novamente.';
+    }
+}
+
+async function entrarComCredenciais() {
+    const idInput = document.getElementById('manual-login-id');
+    const passInput = document.getElementById('manual-login-pass');
+    const btn = document.getElementById('btn-confirm-login');
+    const loginId = idInput ? idInput.value.trim() : '';
+    const loginPass = passInput ? passInput.value.trim() : '';
+
+    mostrarErroLogin('');
+
+    // 1. Validação de campos vazios
+    if (!loginId || !loginPass) {
+        mostrarErroLogin('Preencha o e-mail e a senha para entrar.');
+        (loginId ? passInput : idInput)?.focus();
         return;
     }
 
-    try {
-        const credential = firebase.auth.EmailAuthProvider.credential(user.email, loginPass);
-        await user.reauthenticateWithCredential(credential);
+    let user = VIPBANK.auth.currentUser;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!user && !emailRegex.test(loginId)) {
+        mostrarErroLogin('Digite o e-mail cadastrado para entrar.');
+        idInput?.focus();
+        return;
+    }
 
-        // Reautenticação bem-sucedida, agora carrega os dados do usuário
+    // Estado de carregamento
+    const textoOriginal = btn ? btn.innerText : '';
+    if (btn) { btn.disabled = true; btn.innerText = 'ENTRANDO...'; }
+
+    try {
+        if (!user) {
+            // 2a. Sem sessão ativa: login direto com e-mail e senha
+            const result = await VIPBANK.auth.signInWithEmailAndPassword(loginId, loginPass);
+            user = result.user;
+        } else {
+            // 2b. Sessão Google ativa: confirma a senha
+            const temProviderSenha = user.providerData.some(p => p.providerId === 'password');
+            if (temProviderSenha) {
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, loginPass);
+                await user.reauthenticateWithCredential(credential);
+            } else {
+                // Conta criada só com Google: a senha está apenas no Firestore.
+                // Valida contra ela e vincula a senha ao Firebase Auth, para que
+                // os próximos logins funcionem com signInWithEmailAndPassword.
+                const snap = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
+                if (!snap.exists || snap.data().senha !== loginPass) {
+                    throw { code: 'auth/wrong-password' };
+                }
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, loginPass);
+                try {
+                    await user.linkWithCredential(credential);
+                } catch (linkErr) {
+                    // Não bloqueia o acesso se o vínculo falhar (ex.: senha fraca < 6 caracteres)
+                    console.warn('Não foi possível vincular senha ao Auth:', linkErr.code);
+                }
+            }
+        }
+
+        // 3. Autenticado: carrega os dados do usuário
         const userDoc = await VIPBANK.db.collection('usuarios').doc(user.uid).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
@@ -611,13 +713,41 @@ async function entrarComCredenciais() {
             showCreateAccountForm();
         }
     } catch (error) {
-        if (error.code === 'auth/wrong-password') {
-            toast('Senha incorreta. Tente novamente.', 'erro');
-        } else {
-            toast('Erro de segurança. Tente novamente mais tarde.', 'erro');
-        }
-        VIPBANK.auth.signOut(); // Desloga em caso de erro
+        console.error('Erro no login:', error);
+        mostrarErroLogin(mensagemErroAuth(error));
+        if (passInput) { passInput.value = ''; passInput.focus(); }
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = textoOriginal || 'ENTRAR NA CONTA'; }
     }
+}
+
+// Listeners do modal de login (substitui o onclick inline)
+function registrarListenersLogin() {
+    const btn = document.getElementById('btn-confirm-login');
+    if (btn && !btn.dataset.listener) {
+        btn.dataset.listener = '1';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            entrarComCredenciais();
+        });
+    }
+    // Enter nos campos também envia
+    ['manual-login-id', 'manual-login-pass'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.dataset.listener) {
+            el.dataset.listener = '1';
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); entrarComCredenciais(); }
+            });
+            el.addEventListener('input', () => mostrarErroLogin(''));
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', registrarListenersLogin);
+} else {
+    registrarListenersLogin();
 }
 
 function entrar() {
@@ -676,15 +806,23 @@ function showCreateAccountForm() {
 
 async function verificarAntesDeCriar() {
     try {
+        console.log('🔄 verificarAntesDeCriar: iniciando login Google');
         // Abre popup do Google Login
         const provider = new firebase.auth.GoogleAuthProvider();
         const result = await VIPBANK.auth.signInWithPopup(provider);
         const user = result.user;
+        console.log('✅ verificarAntesDeCriar: login Google sucesso!', { email: user.email, uid: user.uid });
         
         // Exibe o modal de confirmação de senha
         document.getElementById('manual-login-id').value = user.email;
         showModal('modal-login-manual');
     } catch (error) {
+        console.error('❌ Erro no verificarAntesDeCriar:', error);
+        console.error('Detalhes do erro:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+        });
         toast('Erro ao verificar conta. Tente novamente.', true);
     }
 }
@@ -743,6 +881,12 @@ async function handleRegistration() {
         // Se não existe, salva o formulário
         await finalizeAccount(user.uid);
     } catch (error) {
+        console.error('❌ Erro no handleRegistration (cadastro Google):', error);
+        console.error('Detalhes do erro:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+        });
         toast('Erro: ' + error.message, true);
         btn.disabled = false;
         btn.innerText = 'FINALIZAR CADASTRO VIP';
@@ -813,6 +957,23 @@ async function finalizeAccount(uid) {
     btn.innerText = 'Ativando Conta VIP...';
     
     try {
+        console.log('📋 Dados do usuário a serem salvos:', {
+            uid,
+            nome,
+            cpf,
+            tipoConta,
+            dataNascimento,
+            estado,
+            cidade,
+            email,
+            celular,
+            whatsapp,
+            senha: '(ocultada',
+            senhaTransacional: '(ocultada)',
+            pixType,
+            pixValue: pixFormatado
+        });
+
         // O segredo para o erro de permissão: 
         // Usuário autenticado só tem permissão para escrever no seu PRÓPRIO ID (UID)
         const cleanCpf = cpf.replace(/\D/g, '');
@@ -838,9 +999,12 @@ async function finalizeAccount(uid) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // GRAVAÇÃO VIA CLOUD FUNCTION
-        const criarConta = VIPBANK.functions.httpsCallable('criarContaUsuario');
-        await criarConta({ dadosUsuario });
+        console.log('🚀 Gravando diretamente no Firestore com dados:', dadosUsuario);
+        
+        // GRAVAÇÃO DIRETA NO FIRESTORE (sem Cloud Function)
+        await VIPBANK.db.collection('usuarios').doc(uid).set(dadosUsuario);
+        
+        console.log('✅ Conta criada com sucesso!');
         
         // DELAY DE GRAVAÇÃO: Aguarda Firestore estabilizar
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -863,6 +1027,12 @@ async function finalizeAccount(uid) {
         updateUI(); // Carrega os dados na tela
         
     } catch (error) {
+        console.error('❌ Erro no finalizeAccount:', error);
+        console.error('Detalhes do erro:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+        });
         toast('Erro: ' + error.message, true);
     } finally {
         btn.disabled = false;
